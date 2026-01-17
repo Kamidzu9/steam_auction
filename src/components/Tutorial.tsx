@@ -32,7 +32,9 @@ export default function Tutorial() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("steamAuction_showTutorial");
+      // saved === "true" means the user opted to hide the tutorial permanently
       if (saved === null) setOpen(true);
+      setHideForever(saved === "true");
     } catch (e) {
       // ignore
     }
@@ -179,7 +181,20 @@ export default function Tutorial() {
                     <div className="ml-4 flex flex-col items-end gap-2">
                       <button onClick={() => close(false)} className="text-xs text-slate-400 hover:text-white">Close</button>
                       <label className="flex items-center gap-2 text-xs text-slate-400">
-                        <input type="checkbox" checked={hideForever} onChange={(e) => setHideForever(e.target.checked)} />
+                        <input
+                          type="checkbox"
+                          checked={hideForever}
+                          onChange={(e) => {
+                            const v = e.target.checked;
+                            setHideForever(v);
+                            try {
+                              if (v) localStorage.setItem("steamAuction_showTutorial", "true");
+                              else localStorage.removeItem("steamAuction_showTutorial");
+                            } catch (err) {
+                              // ignore
+                            }
+                          }}
+                        />
                         Don't show again
                       </label>
                     </div>
