@@ -1,0 +1,62 @@
+/* Keyframes and utility animations used across the app */
+:root {
+  --accent: #60a5fa;
+  --accent-2: #7c3aed;
+}
+
+/* Fade in */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Slide up subtle */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Card pop */
+@keyframes pop {
+  0% { transform: scale(.98); opacity: 0.0 }
+  60% { transform: scale(1.02); opacity: 1 }
+  100% { transform: scale(1); }
+}
+
+/* Reveal / flourish for pick */
+@keyframes revealPick {
+  0% { opacity: 0; transform: translateY(6px) scale(.98); filter: blur(4px); }
+  60% { opacity: 1; transform: translateY(-6px) scale(1.04); filter: blur(0); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* One-shot pulse (controlled via adding/removing class) */
+@keyframes pulseOnce {
+  0% { box-shadow: 0 0 0 0 rgba(124,58,237,0.35); }
+  70% { box-shadow: 0 0 30px 8px rgba(124,58,237,0.08); }
+  100% { box-shadow: 0 0 0 0 rgba(124,58,237,0); }
+}
+
+/* Utility classes */
+.animate-fade-in { animation: fadeIn 360ms cubic-bezier(.2,.9,.2,1) both; }
+.animate-slide-up { animation: slideUp 420ms cubic-bezier(.2,.9,.2,1) both; }
+.animate-pop { animation: pop 360ms cubic-bezier(.22,.9,.28,1) both; }
+.animate-reveal-pick { animation: revealPick 760ms cubic-bezier(.15,.9,.3,1) both; }
+.animate-pulse-once { animation: pulseOnce 900ms ease-out both; }
+
+/* Button affordance */
+.btn-animated {
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+/* Slight glassy shine for interactive cards */
+.card-animated {
+  transition: transform 200ms ease, background-color 200ms ease, box-shadow 200ms ease;
+}
+
+/* Utility for reduced-motion users */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in, .animate-slide-up, .animate-pop, .animate-reveal-pick, .animate-pulse-once {
+    animation: none !important;
+  }
+}

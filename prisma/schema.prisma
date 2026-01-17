@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String    @id @default(cuid())
+  steamId    String    @unique
+  displayName String?
+  avatarUrl  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  friends        Friend[]
+  ownedGames     Ownership[]
+  poolsCreated   AuctionPool[] @relation("PoolOwner")
+  pickHistory    PickHistory[]
+}
+
+model Friend {
+  id          String   @id @default(cuid())
+  userId      String
+  steamId     String
+  displayName String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+
+  user    User   @relation(fields: [userId], references: [id])
+  pools   AuctionPool[]
+
+  @@unique([userId, steamId])
+}
+
+model Game {
+  id        String   @id @default(cuid())
+  appId     Int      @unique
+  name      String
+  storeUrl  String
+  tags      String?  // comma-separated tags for MVP
+  createdAt DateTime @default(now())
+
+  ownerships Ownership[]
+  poolGames  PoolGame[]
+  pickHistory PickHistory[]
+}
+
+model Ownership {
+  id        String   @id @default(cuid())
+  userId    String
+  gameId    String
+  installed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@unique([userId, gameId])
+}
+
+model AuctionPool {
+  id          String   @id @default(cuid())
+  ownerId     String
+  friendId    String
+  name        String
+  createdAt   DateTime @default(now())
+
+  owner   User   @relation("PoolOwner", fields: [ownerId], references: [id])
+  friend  Friend @relation(fields: [friendId], references: [id])
+  games   PoolGame[]
+  picks   PickHistory[]
+}
+
+model PoolGame {
+  id         String   @id @default(cuid())
+  poolId     String
+  gameId     String
+  weight     Int      @default(1)
+  tags       String?  // optional tags override
+  createdAt  DateTime @default(now())
+
+  pool AuctionPool @relation(fields: [poolId], references: [id])
+  game Game        @relation(fields: [gameId], references: [id])
+
+  @@unique([poolId, gameId])
+}
+
+model PickHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  poolId    String
+  gameId    String
+  pickedAt  DateTime @default(now())
+
+  user User        @relation(fields: [userId], references: [id])
+  pool AuctionPool @relation(fields: [poolId], references: [id])
+  game Game        @relation(fields: [gameId], references: [id])
+}
