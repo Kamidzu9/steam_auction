@@ -51,3 +51,29 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ friend });
 }
+
+export async function DELETE(request: NextRequest) {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("steam_user_id")?.value;
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = (await request.json()) as { id?: string; steamId?: string };
+
+  if (!body?.id && !body?.steamId) {
+    return NextResponse.json({ error: "Missing id or steamId" }, { status: 400 });
+  }
+
+  try {
+    if (body.id) {
+      await prisma.friend.deleteMany({ where: { id: body.id, userId } });
+    } else if (body.steamId) {
+      await prisma.friend.deleteMany({ where: { steamId: body.steamId, userId } });
+    }
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+  }
+}

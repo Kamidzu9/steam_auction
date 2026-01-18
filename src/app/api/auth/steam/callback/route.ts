@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifySteamOpenId } from "@/lib/steam";
+import { getPlayerSummaries } from "@/lib/steam-api";
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -12,15 +13,37 @@ export async function GET(request: NextRequest) {
 
   if (!verification.valid) {
     console.warn("[auth/steam/callback] Steam verification failed");
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/dashboard?login=failed", request.url));
   }
 
   const steamId = verification.steamId;
+  const apiKey = process.env.STEAM_API_KEY;
+  let displayName: string | undefined;
+  let avatarUrl: string | undefined;
+
+  if (apiKey) {
+    try {
+      const summary = await getPlayerSummaries([steamId], apiKey);
+      const player = summary.ok ? summary.data.response.players[0] : null;
+      if (player) {
+        displayName = player.personaname;
+        avatarUrl = player.avatarfull;
+      }
+    } catch {
+      // ignore profile enrichment errors
+    }
+  }
+
   const user = await prisma.user.upsert({
     where: { steamId },
-    update: {},
+    update: {
+      displayName: displayName ?? undefined,
+      avatarUrl: avatarUrl ?? undefined,
+    },
     create: {
       steamId,
+      displayName,
+      avatarUrl,
     },
   });
 

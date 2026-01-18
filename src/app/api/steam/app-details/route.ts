@@ -20,11 +20,15 @@ export async function GET(request: NextRequest) {
     if (!entry || !entry.success) return NextResponse.json({ error: "No data" }, { status: 404 });
 
     const data = entry.data ?? {};
-    const categories = (data.categories || []).map((c: any) => c.description).filter(Boolean);
-    const genres = (data.genres || []).map((g: any) => g.description).filter(Boolean);
+    const categories = (Array.isArray(data.categories) ? data.categories : [])
+      .map((c: { description?: string }) => c.description)
+      .filter((value): value is string => Boolean(value));
+    const genres = (Array.isArray(data.genres) ? data.genres : [])
+      .map((g: { description?: string }) => g.description)
+      .filter((value): value is string => Boolean(value));
 
     return NextResponse.json({ categories, genres, data });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Fetch error" }, { status: 500 });
   }
 }

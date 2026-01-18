@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 
 type Item = { appid: number; name: string; image?: string };
 
@@ -8,11 +8,14 @@ export type AuctionWheelHandle = {
   spinTo: (targetAppId: number, durationMs?: number) => Promise<number>;
 };
 
-const AuctionWheel = forwardRef<AuctionWheelHandle, { items: Item[]; defaultDurationMs?: number }>(
-  ({ items, defaultDurationMs = 4200 }, ref) => {
+const AuctionWheel = forwardRef<
+  AuctionWheelHandle,
+  { items: Item[]; defaultDurationMs?: number; onCenterClick?: () => void }
+>(({ items, defaultDurationMs = 4200, onCenterClick }, ref) => {
     const [rotation, setRotation] = useState(0);
     const [selected, setSelected] = useState<number | null>(null);
     const [spinDuration, setSpinDuration] = useState(defaultDurationMs);
+    const [size, setSize] = useState(360);
     const discRef = useRef<HTMLDivElement | null>(null);
     const draggingRef = useRef(false);
     const lastPointerRef = useRef<{ angle: number; time: number } | null>(null);
@@ -34,22 +37,47 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, { items: Item[]; defaultDura
             return;
           }
 
-          const dur = durationMs ?? spinDuration ?? defaultDurationMs;
+          // Ensure duration is at least 1000ms (1s) so wheel makes one full revolution
+          const requested = durationMs ?? spinDuration ?? defaultDurationMs;
+          const dur = Math.max(1000, requested);
           setSpinDuration(dur);
 
-          const targetIdx = Math.max(0, visible.findIndex((it) => it.appid === targetAppId));
-
           const slice = 360 / count;
-          const rounds = 6 + Math.floor(Math.random() * 3);
-          const targetCenter = targetIdx * slice + slice / 2;
+
+          // find target index; fallback to a random index if not present
+          let targetIdx = visible.findIndex((it) => it.appid === targetAppId);
+          if (targetIdx < 0) {
+            targetIdx = Math.floor(Math.random() * count);
+          }
+
+          // compute desired stopping angle so the slice center aligns with pointer at top
+          const targetCenter = targetIdx * slice + slice / 2; // degrees
           const randomOffset = (Math.random() - 0.5) * (slice * 0.15);
-          const final = rounds * 360 + (360 - targetCenter) + randomOffset;
+
+          const current = rotation; // may be large
+          const currentNorm = ((current % 360) + 360) % 360;
+
+          // desired normalized angle where wheel should end so that pointer (0deg/top) hits target center
+          const desiredNorm = (360 - targetCenter + randomOffset + 360) % 360;
+
+          // compute minimal positive delta to reach desiredNorm
+          let delta = desiredNorm - currentNorm;
+          if (delta <= 0) delta += 360;
+
+          // ensure at least one full rotation (360 deg)
+          if (delta < 360) delta += 360 * Math.ceil((360 - delta) / 360);
+
+          // add some full extra rounds for dramatic effect
+          const extraRounds = 2 + Math.floor(Math.random() * 3);
+          const final = current + delta + extraRounds * 360;
 
           setSelected(null);
+
+          // apply rotation with easing that eases out (slows near the end)
           requestAnimationFrame(() => setRotation(final));
 
           setTimeout(() => {
-            const normalized = (final % 360 + 360) % 360;
+            const normalized = ((final % 360) + 360) % 360;
             const landed = Math.floor(((360 - normalized) % 360) / slice);
             setSelected(landed);
             resolve(landed);
@@ -58,11 +86,21 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, { items: Item[]; defaultDura
       },
     }));
 
-    const size = 380;
+    useEffect(() => {
+      const updateSize = () => {
+        const next = Math.max(260, Math.min(380, window.innerWidth - 32));
+        setSize((prev) => (Math.abs(prev - next) > 2 ? next : prev));
+      };
+      updateSize();
+      window.addEventListener("resize", updateSize);
+      return () => window.removeEventListener("resize", updateSize);
+    }, []);
+
     const cx = size / 2;
     const cy = size / 2;
     const outerR = size / 2 - 6;
     const innerR = Math.max(48, size * 0.2);
+    const fontSize = Math.max(8, Math.min(12, Math.round(size / 32)));
 
     function pointAngle(pageX: number, pageY: number) {
       const rect = discRef.current?.getBoundingClientRect();
@@ -118,7 +156,27 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, { items: Item[]; defaultDura
 
     return (
       <div style={{ width: size, height: size }} className="relative">
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-sm font-semibold text-white shadow-lg">▼</div>
+        {/* center pick button overlayed above the hub (styled as circular hub) */}
+        <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <button
+            id="btn-pick-game"
+            onClick={onCenterClick}
+            aria-label="Roll"
+            type="button"
+            disabled={(visible?.length ?? 0) === 0}
+            title={(visible?.length ?? 0) === 0 ? "No items to roll" : "Roll"}
+            className="pointer-events-auto rounded-full flex items-center justify-center font-semibold shadow-lg transition-transform"
+            style={{
+              width: (innerR - 8) * 2,
+              height: (innerR - 8) * 2,
+              background: (visible?.length ?? 0) > 0 ? "var(--surface-strong)" : "#101820",
+              color: (visible?.length ?? 0) > 0 ? "var(--foreground)" : "#7b8b8c",
+              border: `2px solid ${ (visible?.length ?? 0) > 0 ? 'var(--stroke)' : '#1f2937' }`,
+            }}
+          >
+            <span className="select-none">Pick</span>
+          </button>
+        </div>
 
         <div
           ref={discRef}
@@ -131,7 +189,7 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, { items: Item[]; defaultDura
             width: size,
             height: size,
             transform: `rotate(${rotation}deg)`,
-            transition: `transform ${spinDuration}ms cubic-bezier(.15,.9,.3,1)`,
+            transition: `transform ${spinDuration}ms cubic-bezier(0.22,1,0.36,1)`,
             touchAction: 'none'
           }}
         >
@@ -165,7 +223,7 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, { items: Item[]; defaultDura
                     x={textPos.x}
                     y={textPos.y}
                     fill="#e6eef8"
-                    fontSize={10}
+                    fontSize={fontSize}
                     textAnchor="middle"
                     dominantBaseline="middle"
                     transform={`rotate(${midAngle}, ${textPos.x}, ${textPos.y})`}
@@ -179,16 +237,23 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, { items: Item[]; defaultDura
 
             {/* center hub */}
             <g>
-              <circle cx={cx} cy={cy} r={innerR - 8} fill="#0b1220" stroke="#172033" strokeWidth={2} />
+              <circle cx={cx} cy={cy} r={innerR - 8} fill="var(--surface-strong)" stroke="var(--stroke)" strokeWidth={2} />
             </g>
           </svg>
 
           {/* center hub is visual only; wheel is spun programmatically from Dashboard */}
+          </div>
+
+        {/* fixed pointer indicator at top */}
+        <div style={{ position: "absolute", top: -8, left: "50%", transform: "translateX(-50%)" }}>
+          <div style={{ width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderBottom: "14px solid var(--accent)" }} aria-hidden />
         </div>
       </div>
     );
   }
 );
+
+AuctionWheel.displayName = "AuctionWheel";
 
 export default AuctionWheel;
 

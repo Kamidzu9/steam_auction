@@ -2,18 +2,24 @@
 
 import { useEffect, useState } from "react";
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
+
 export default function InstallPrompt() {
-  const [promptEvent, setPromptEvent] = useState<any>(null);
+  const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const handler = (e: any) => {
-      e.preventDefault();
-      setPromptEvent(e);
+    const handler = (event: Event) => {
+      const prompt = event as BeforeInstallPromptEvent;
+      prompt.preventDefault();
+      setPromptEvent(prompt);
       setVisible(true);
     };
-    window.addEventListener("beforeinstallprompt", handler as any);
-    return () => window.removeEventListener("beforeinstallprompt", handler as any);
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
   async function install() {
@@ -24,7 +30,7 @@ export default function InstallPrompt() {
       setVisible(false);
       setPromptEvent(null);
       console.log("Install prompt choice", choice);
-    } catch (e) {
+    } catch {
       setVisible(false);
     }
   }

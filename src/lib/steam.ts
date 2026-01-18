@@ -2,6 +2,10 @@ import { headers } from "next/headers";
 
 const STEAM_OPENID_ENDPOINT = "https://steamcommunity.com/openid/login";
 
+function normalizeBaseUrl(url: string) {
+  return url.replace(/\/+$/, "");
+}
+
 export function buildSteamOpenIdUrl(returnTo: string, realm: string) {
   const params = new URLSearchParams({
     "openid.ns": "http://specs.openid.net/auth/2.0",
@@ -58,7 +62,7 @@ export async function verifySteamOpenId(
       steamId: steamIdMatch[1],
       returnTo: requestUrl,
     };
-  } catch (err) {
+  } catch {
     return { valid: false as const };
   }
 }
@@ -68,4 +72,13 @@ export async function getBaseUrl() {
   const proto = hdrs.get("x-forwarded-proto") ?? "http";
   const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host");
   return `${proto}://${host}`;
+}
+
+export async function getSteamBaseUrl() {
+  const envUrl =
+    process.env.STEAM_REALM ??
+    process.env.NEXT_PUBLIC_BASE_URL ??
+    process.env.APP_URL;
+  if (envUrl) return normalizeBaseUrl(envUrl);
+  return normalizeBaseUrl(await getBaseUrl());
 }

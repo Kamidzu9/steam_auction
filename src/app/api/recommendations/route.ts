@@ -31,12 +31,12 @@ export async function GET() {
     if (user?.steamId && apiKey) {
       try {
         const url = `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/?key=${apiKey}&steamid=${user.steamId}`;
-        const res = await fetchSteam<{ response?: { games?: any[] } }>(url);
+        const res = await fetchSteam<{ response?: { games?: Array<{ appid: number; name: string }> } }>(url);
         if (res.ok) {
           const gs = res.data.response?.games ?? [];
-          recent = gs.slice(0, 8).map((g: any) => ({ appId: g.appid, name: g.name }));
+          recent = gs.slice(0, 8).map((g) => ({ appId: g.appid, name: g.name }));
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     }

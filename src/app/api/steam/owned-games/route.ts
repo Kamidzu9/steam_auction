@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Include playtime_forever when available
-  const games = (response.data.response?.games ?? []).map((g: any) => ({
+  const games = (response.data.response?.games ?? []).map((g: { appid: number; name: string; playtime_forever?: number }) => ({
     appid: g.appid,
     name: g.name,
     playtime_forever: g.playtime_forever ?? 0,

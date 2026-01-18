@@ -26,3 +26,23 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ pool });
 }
+
+export async function GET() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("steam_user_id")?.value;
+
+  if (!userId) {
+    return NextResponse.json({ pools: [] }, { status: 200 });
+  }
+
+  const pools = await prisma.auctionPool.findMany({
+    where: { ownerId: userId },
+    include: {
+      friend: true,
+      games: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json({ pools });
+}

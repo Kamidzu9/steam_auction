@@ -14,7 +14,7 @@ const forbiddenRegex =
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ poolId: string }> }
+  { params }: { params: { poolId: string } }
 ) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("steam_user_id")?.value;
@@ -23,7 +23,13 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { poolId } = await params;
+  const { poolId } = params;
+  const pool = await prisma.auctionPool.findFirst({
+    where: { id: poolId, ownerId: userId },
+  });
+  if (!pool) {
+    return NextResponse.json({ error: "Pool not found" }, { status: 404 });
+  }
   const body = (await request.json()) as {
     appId: number;
     name: string;

@@ -14,7 +14,7 @@ import { pickWeighted } from "@/lib/pickUtils";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ poolId: string }> }
+  { params }: { params: { poolId: string } }
 ) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("steam_user_id")?.value;
@@ -23,14 +23,14 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { poolId } = await params;
+  const { poolId } = params;
   const body = (await request.json().catch(() => ({}))) as {
     mode?: "pure" | "avoid";
     avoidCount?: number;
   };
 
-  const pool = await prisma.auctionPool.findUnique({
-    where: { id: poolId },
+  const pool = await prisma.auctionPool.findFirst({
+    where: { id: poolId, ownerId: userId },
     include: {
       games: { include: { game: true } },
     },
