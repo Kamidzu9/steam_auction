@@ -14,6 +14,8 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, { items: Item[]; defaultDura
     const [selected, setSelected] = useState<number | null>(null);
     const [spinDuration, setSpinDuration] = useState(defaultDurationMs);
     const discRef = useRef<HTMLDivElement | null>(null);
+    const draggingRef = useRef(false);
+    const lastPointerRef = useRef<{ angle: number; time: number } | null>(null);
 
     // render exact items so mapping is precise
     const visible = useMemo(() => items, [items]);
@@ -62,18 +64,75 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, { items: Item[]; defaultDura
     const outerR = size / 2 - 6;
     const innerR = Math.max(48, size * 0.2);
 
+    function pointAngle(pageX: number, pageY: number) {
+      const rect = discRef.current?.getBoundingClientRect();
+      if (!rect) return 0;
+      const x = pageX - (rect.left + rect.width / 2);
+      const y = pageY - (rect.top + rect.height / 2);
+      const ang = (Math.atan2(y, x) * 180) / Math.PI;
+      return ang;
+    }
+
+    function onPointerDown(e: React.PointerEvent) {
+      const ang = pointAngle(e.pageX, e.pageY);
+      draggingRef.current = true;
+      lastPointerRef.current = { angle: ang, time: performance.now() };
+      // stop any transition so we follow pointer
+      setSpinDuration(0);
+      (e.target as Element).setPointerCapture?.(e.pointerId);
+    }
+
+    function onPointerMove(e: React.PointerEvent) {
+      if (!draggingRef.current) return;
+      const ang = pointAngle(e.pageX, e.pageY);
+      const last = lastPointerRef.current;
+      if (!last) {
+        lastPointerRef.current = { angle: ang, time: performance.now() };
+        return;
+      }
+      const delta = ang - last.angle;
+      // apply delta to rotation
+      setRotation((r) => r + delta);
+      lastPointerRef.current = { angle: ang, time: performance.now() };
+    }
+
+    function onPointerUp(e: React.PointerEvent) {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      const last = lastPointerRef.current;
+      if (!last) return;
+      const ang = pointAngle(e.pageX, e.pageY);
+      const now = performance.now();
+      const dt = Math.max(1, now - last.time);
+      const dv = ang - last.angle;
+      const velocity = dv / dt; // deg per ms
+
+      // inertia: spin further based on velocity
+      const extra = velocity * 3000; // heuristic
+      const final = rotation + extra;
+      const dur = Math.min(6000, Math.max(400, Math.abs(extra) * 1.5));
+      setSpinDuration(dur);
+      requestAnimationFrame(() => setRotation(final));
+      lastPointerRef.current = null;
+    }
+
     return (
       <div style={{ width: size, height: size }} className="relative">
         <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-sm font-semibold text-white shadow-lg">▼</div>
 
         <div
           ref={discRef}
-          className="rounded-full bg-transparent"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          className="rounded-full bg-transparent touch-none"
           style={{
             width: size,
             height: size,
             transform: `rotate(${rotation}deg)`,
             transition: `transform ${spinDuration}ms cubic-bezier(.15,.9,.3,1)`,
+            touchAction: 'none'
           }}
         >
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -132,3 +191,4 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, { items: Item[]; defaultDura
 );
 
 export default AuctionWheel;
+

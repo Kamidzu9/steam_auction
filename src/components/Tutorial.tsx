@@ -32,8 +32,8 @@ export default function Tutorial() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("steamAuction_showTutorial");
-      // saved === "true" means the user opted to hide the tutorial permanently
-      if (saved === null) setOpen(true);
+      // If saved === "true" the user opted to hide permanently. Only auto-open when it's not true.
+      if (saved !== "true") setOpen(true);
       setHideForever(saved === "true");
     } catch (e) {
       // ignore
