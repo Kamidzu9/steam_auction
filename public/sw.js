@@ -51,9 +51,12 @@ self.addEventListener('fetch', (event) => {
           const cloned = res.clone();
           caches.open(CACHE_NAME).then(async (cache) => {
             try {
-              await cache.put(event.request, cloned);
+              // Try to cache only same-origin or API responses; avoid caching third-party opaque responses indiscriminately
+              const reqUrl = new URL(event.request.url);
+              if (reqUrl.origin === self.location.origin || reqUrl.pathname.startsWith('/api/')) {
+                await cache.put(event.request, cloned);
+              }
             } catch (err) {
-              // Ignore put errors (e.g., unsupported scheme or opaque responses)
               console.warn('[sw] cache.put failed for', event.request.url, err);
             }
           });

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   url.searchParams.set("include_played_free_games", "1");
 
   const response = await fetchSteam<{
-    response?: { games?: { appid: number; name: string }[] };
+    response?: { games?: { appid: number; name: string; playtime_forever?: number }[] };
   }>(url.toString());
   if (!response.ok) {
     return NextResponse.json(
@@ -36,5 +36,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ games: response.data.response?.games ?? [] });
+  // Include playtime_forever when available
+  const games = (response.data.response?.games ?? []).map((g: any) => ({
+    appid: g.appid,
+    name: g.name,
+    playtime_forever: g.playtime_forever ?? 0,
+  }));
+
+  return NextResponse.json({ games });
 }

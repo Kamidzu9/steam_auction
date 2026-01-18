@@ -12,6 +12,7 @@ type User = {
 type GameItem = {
   appid: number;
   name: string;
+  playtime_forever?: number;
 };
 
 type Friend = {
@@ -35,6 +36,8 @@ export default function DashboardClient() {
   const [user, setUser] = useState<User | null>(null);
   const [myGames, setMyGames] = useState<GameItem[]>([]);
   const [friendGames, setFriendGames] = useState<GameItem[]>([]);
+  const [recommendations, setRecommendations] = useState<{ topGames?: any[]; recent?: any[] } | null>(null);
+  const [leaderboard, setLeaderboard] = useState<{ pickers?: any[]; games?: any[] } | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [gameTagsMap, setGameTagsMap] = useState<Record<number, string[]>>({});
   const [tagsLoading, setTagsLoading] = useState<Record<number, boolean>>({});
@@ -152,6 +155,8 @@ export default function DashboardClient() {
     try {
       let sharedAppIds: Set<number> | null = null;
 
+      // Map of appid -> total friend playtime
+      const friendPlaytimeMap = new Map<number, number>();
       for (const friendId of selectedFriendIds) {
         const friend = friends.find((f) => f.id === friendId);
         if (!friend?.steamId) continue;
@@ -163,6 +168,11 @@ export default function DashboardClient() {
         }
         const games = data.games ?? [];
         const appSet = new Set(games.map((g) => g.appid));
+        // accumulate friend playtime
+        for (const g of games) {
+          const prev = friendPlaytimeMap.get(g.appid) ?? 0;
+          friendPlaytimeMap.set(g.appid, prev + (g.playtime_forever ?? 0));
+        }
         if (sharedAppIds === null) sharedAppIds = appSet;
         else {
           sharedAppIds = new Set(Array.from(sharedAppIds as Set<number>).filter((id) => appSet.has(id)));
@@ -172,14 +182,42 @@ export default function DashboardClient() {
       const mySet = new Set(myGames.map((g) => g.appid));
       const finalIds = sharedAppIds ? [...sharedAppIds].filter((id) => mySet.has(id)) : [];
       const finalGames = myGames.filter((g) => finalIds.includes(g.appid));
+      // attach friend playtime sum as a temp score for recommendations
+      const scored = finalGames.map((g) => ({
+        ...g,
+        score: (g.playtime_forever ?? 0) + (friendPlaytimeMap.get(g.appid) ?? 0),
+      }));
+      // sort descending by score
+      const mutualSorted = scored.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
       setFriendGames(finalGames);
       // start fetching tags for intersection in background
       void prefetchTagsForGames(finalGames);
       setStatus(finalGames.length ? "Shared games loaded." : "No shared games found.");
+      // set light recommendations (recent handled server-side)
+      setRecommendations((r) => ({ ...(r ?? {}), mutual: mutualSorted.slice(0, 12) } as any));
     } catch (err) {
       setError("Failed to load friend games");
     }
   }
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const r = await fetch('/api/recommendations');
+        const rd = await r.json();
+        setRecommendations(rd);
+      } catch (e) {
+        // ignore
+      }
+      try {
+        const l = await fetch('/api/leaderboard');
+        const ld = await l.json();
+        setLeaderboard(ld);
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, []);
 
   async function fetchGameTags(appid: number) {
     // cached?
@@ -533,7 +571,64 @@ export default function DashboardClient() {
               </button>
             </div>
 
-              <div id="wheel" className="mt-4 flex items-center justify-center">
+            {/* Suggestions & Leaderboard */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-lg border border-slate-700 bg-slate-950 p-3">
+                <div className="text-sm text-slate-300 font-semibold mb-2">Suggestions</div>
+                {recommendations ? (
+                  <div className="text-sm text-slate-200">
+                    <div className="text-xs text-slate-400">Recent</div>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {recommendations.recent?.map((g: any) => (
+                        <div key={g.appId} className="text-xs">{g.name}</div>
+                      ))}
+                    </div>
+                    <div className="mt-3 text-xs text-slate-400">Top Picks</div>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      {recommendations.topGames?.map((g: any) => (
+                        <div key={g.appId} className="text-xs">{g.name}</div>
+                      ))}
+                    </div>
+                    {recommendations.mutual ? (
+                      <>
+                        <div className="mt-3 text-xs text-slate-400">Mutual (by playtime)</div>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          {recommendations.mutual?.map((g: any) => (
+                            <div key={g.appid} className="text-xs">{g.name}</div>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-400">Loading...</div>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-slate-700 bg-slate-950 p-3">
+                <div className="text-sm text-slate-300 font-semibold mb-2">Leaderboard</div>
+                {leaderboard ? (
+                  <div>
+                    <div className="text-xs text-slate-400">Top Pickers</div>
+                    <ol className="mt-2 text-xs list-decimal ml-4 text-slate-200">
+                      {leaderboard.pickers?.map((p: any) => (
+                        <li key={p.userId}>{p.name} — {p.picks}</li>
+                      ))}
+                    </ol>
+                    <div className="mt-3 text-xs text-slate-400">Top Games</div>
+                    <ol className="mt-2 text-xs list-decimal ml-4 text-slate-200">
+                      {leaderboard.games?.map((g: any) => (
+                        <li key={g.appId}>{g.name} — {g.picks}</li>
+                      ))}
+                    </ol>
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-400">Loading...</div>
+                )}
+              </div>
+            </div>
+
+            <div id="wheel" className="mt-4 flex items-center justify-center">
               <AuctionWheel
                 ref={wheelRef}
                 items={filteredIntersection.map((g) => ({ appid: g.appid, name: g.name }))}
