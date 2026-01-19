@@ -38,7 +38,7 @@ export default function InstallPrompt() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-6 left-6 z-50">
+    <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] left-6 z-50 md:bottom-6">
       <button
         onClick={install}
         className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg"

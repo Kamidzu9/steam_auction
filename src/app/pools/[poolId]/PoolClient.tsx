@@ -11,6 +11,8 @@ type PoolGame = {
   weight?: number;
 };
 
+type WheelItem = { appid: number; name: string };
+
 type ApiErrorResponse = { error?: string };
 
 function getErrorMessage(err: unknown) {
@@ -38,8 +40,17 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
   const [pickResult, setPickResult] = useState<string>("");
   const [pickImage, setPickImage] = useState<string | null>(null);
   const [pickPulse, setPickPulse] = useState(false);
+  const [isPicking, setIsPicking] = useState(false);
+  const [activeWheelItem, setActiveWheelItem] = useState<WheelItem | null>(null);
+  const canPick = games.length > 0 && !isPicking;
+  const spinningItem =
+    activeWheelItem ?? (games[0] ? { appid: games[0].appId, name: games[0].name } : null);
 
   async function pickGame() {
+    if (isPicking) return;
+    setPickResult("");
+    setPickImage(null);
+    setIsPicking(true);
     setStatus("Spiel wird ausgewaehlt...");
     setError("");
     try {
@@ -80,6 +91,8 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
     } catch (err) {
       setError(getErrorMessage(err));
       setStatus("");
+    } finally {
+      setIsPicking(false);
     }
   }
 
@@ -90,9 +103,10 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
           <div className="flex items-center gap-2">
             <label className="text-sm text-slate-300">Modus:</label>
             <select
-              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
               value={pickMode}
               onChange={(e) => setPickMode(e.target.value as "pure" | "avoid")}
+              disabled={isPicking}
             >
               <option value="pure">Zufall (pure)</option>
               <option value="avoid">Avoid repeats</option>
@@ -102,23 +116,37 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
           <div className="flex items-center gap-2">
             <label className="text-sm text-slate-300">Avoid:</label>
             <input
-              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white"
+              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
               type="number"
               min={1}
+              step={1}
               value={avoidCount}
-              onChange={(e) => setAvoidCount(Number(e.target.value))}
+              onChange={(e) => {
+                const next = Number(e.target.value);
+                setAvoidCount((prev) =>
+                  Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev
+                );
+              }}
+              disabled={pickMode !== "avoid" || isPicking}
             />
           </div>
 
           <div className="flex items-center gap-2">
             <label className="text-sm text-slate-300">Spin (s):</label>
             <input
-              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white"
+              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
               type="number"
               step={0.1}
-              min={0.5}
+              min={1}
               value={spinSeconds}
-              onChange={(e) => setSpinSeconds(Number(e.target.value))}
+              onChange={(e) => {
+                const next = Number(e.target.value);
+                setSpinSeconds((prev) => {
+                  if (!Number.isFinite(next)) return prev;
+                  return Math.min(12, Math.max(1, next));
+                });
+              }}
+              disabled={isPicking}
             />
           </div>
         </div>
@@ -128,40 +156,75 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
             ref={wheelRef}
             items={games.map((g) => ({ appid: g.appId, name: g.name }))}
             onCenterClick={() => void pickGame()}
+            disabled={!canPick}
+            disabledReason={isPicking ? "Pick laeuft..." : undefined}
+            allowDrag={false}
+            onActiveItemChange={(item) =>
+              setActiveWheelItem(item ? { appid: item.appid, name: item.name } : null)
+            }
           />
         </div>
 
         {status ? <p className="mt-3 text-sm text-slate-200">{status}</p> : null}
         {error ? <p className="mt-3 text-sm text-rose-200">{error}</p> : null}
 
-        {pickResult ? (
+        {isPicking || pickResult ? (
           <div
             className={`mt-4 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-200 transition ${
               pickPulse ? "animate-reveal-pick animate-pulse-once" : ""
             }`}
           >
-            <div className="flex items-center gap-3">
-              {pickImage ? (
-                <Image
-                  src={pickImage}
-                  alt={pickResult}
-                  width={460}
-                  height={215}
-                  className="h-16 w-28 rounded-md object-cover shadow-md"
-                  sizes="(max-width: 768px) 112px, 112px"
-                  onError={(e) => {
-                    const t = e.currentTarget as HTMLImageElement;
-                    if (!t.src.includes("header.jpg")) {
-                      t.src = "https://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
-                    }
-                  }}
-                />
-              ) : null}
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
-                <div className="text-lg font-semibold">{pickResult}</div>
+            {isPicking ? (
+              spinningItem ? (
+                <div className="flex items-center gap-3">
+                  <Image
+                    src={`https://cdn.akamai.steamstatic.com/steam/apps/${spinningItem.appid}/header.jpg`}
+                    alt={spinningItem.name}
+                    width={460}
+                    height={215}
+                    className="h-16 w-28 rounded-md object-cover shadow-md"
+                    sizes="(max-width: 768px) 112px, 112px"
+                    onError={(e) => {
+                      const t = e.currentTarget as HTMLImageElement;
+                      if (!t.src.includes("/apps/0/")) {
+                        t.src = "https://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
+                      }
+                    }}
+                  />
+                  <div className="min-w-0">
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Unter Pfeil</div>
+                    <div className="text-lg font-semibold leading-tight break-words">
+                      {spinningItem.name}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-300">Wheel dreht...</div>
+              )
+            ) : (
+              <div className="flex items-center gap-3">
+                {pickImage ? (
+                  <Image
+                    src={pickImage}
+                    alt={pickResult}
+                    width={460}
+                    height={215}
+                    className="h-16 w-28 rounded-md object-cover shadow-md"
+                    sizes="(max-width: 768px) 112px, 112px"
+                    onError={(e) => {
+                      const t = e.currentTarget as HTMLImageElement;
+                      if (!t.src.includes("/apps/0/")) {
+                        t.src = "https://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
+                      }
+                    }}
+                  />
+                ) : null}
+                <div className="min-w-0">
+                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
+                  <div className="text-lg font-semibold leading-tight break-words">{pickResult}</div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ) : null}
       </section>

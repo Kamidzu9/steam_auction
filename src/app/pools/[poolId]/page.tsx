@@ -39,8 +39,8 @@ export default async function PoolPage({ params }: { params: { poolId: string } 
         <Link className="text-sm text-slate-400 hover:text-white" href="/pools">
           Back to Pools
         </Link>
-        <h1 className="font-display mt-3 text-2xl text-white">{pool.name}</h1>
-        <p className="text-muted mt-2 text-sm">
+        <h1 className="font-display mt-3 text-2xl text-white break-words">{pool.name}</h1>
+        <p className="text-muted mt-2 text-sm break-words">
           Friend: {pool.friend?.displayName ?? pool.friend?.steamId ?? "Unknown"}
         </p>
         <p className="text-muted mt-1 text-sm">Games: {games.length}</p>
@@ -63,7 +63,7 @@ export default async function PoolPage({ params }: { params: { poolId: string } 
             <a
               key={game.appId}
               href={game.storeUrl ?? `https://store.steampowered.com/app/${game.appId}`}
-              className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200 hover:border-white/30"
+              className="min-w-0 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200 hover:border-white/30 break-words"
               target="_blank"
               rel="noreferrer"
             >

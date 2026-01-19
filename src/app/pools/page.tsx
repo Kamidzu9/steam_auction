@@ -43,10 +43,10 @@ export default async function PoolsPage() {
               <Link
                 key={pool.id}
                 href={`/pools/${pool.id}`}
-                className="card-animated rounded-2xl border border-white/10 bg-black/30 p-4 text-left text-sm text-slate-200 hover:border-white/30"
+                className="card-animated min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 text-left text-sm text-slate-200 hover:border-white/30"
               >
-                <div className="font-display text-base text-white">{pool.name}</div>
-                <div className="mt-2 text-xs text-slate-400">
+                <div className="font-display text-base text-white break-words">{pool.name}</div>
+                <div className="mt-2 text-xs text-slate-400 truncate">
                   Friend: {pool.friend?.displayName ?? pool.friend?.steamId ?? "Unknown"}
                 </div>
                 <div className="mt-1 text-xs text-slate-400">

@@ -72,7 +72,7 @@ export default function BottomNav() {
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-black/60 backdrop-blur"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="mx-auto flex max-w-4xl items-center justify-around px-3 py-2">
+      <div className="mx-auto flex max-w-6xl items-center justify-around px-3 py-2">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           const Icon = item.icon;

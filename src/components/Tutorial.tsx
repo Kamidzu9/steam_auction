@@ -177,7 +177,7 @@ export default function Tutorial() {
   return (
     <div>
       {isDashboard ? (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-6 z-50 md:bottom-6">
           <button
             aria-label="Tutorial anzeigen"
             onClick={openTutorial}
@@ -217,11 +217,14 @@ export default function Tutorial() {
                     targetRect.top > window.innerHeight * 0.6
                       ? Math.max(12, targetRect.top - 190)
                       : Math.max(12, targetRect.top + targetRect.height + 10),
-                  left: Math.min(targetRect.left, window.innerWidth - 360),
+                  left: Math.min(
+                    Math.max(12, targetRect.left),
+                    Math.max(12, window.innerWidth - 320)
+                  ),
                   zIndex: 70,
                 }}
               >
-                <div className="max-w-md rounded-2xl bg-slate-900/95 p-4 text-slate-100 shadow-2xl pointer-events-auto">
+                <div className="w-80 max-w-[90vw] rounded-2xl bg-slate-900/95 p-4 text-slate-100 shadow-2xl pointer-events-auto">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="text-sm font-semibold">{step.title}</div>

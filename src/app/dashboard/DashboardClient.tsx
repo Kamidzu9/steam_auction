@@ -36,6 +36,8 @@ type Pool = {
   name: string;
 };
 
+type WheelItem = { appid: number; name: string };
+
 const COMMON_TAG_OPTIONS = [
   "coop",
   "multiplayer",
@@ -134,6 +136,7 @@ export default function DashboardClient() {
   const loginFailed = searchParams?.get("login") === "failed";
 
   const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [myGames, setMyGames] = useState<GameItem[]>([]);
   const [friendGames, setFriendGames] = useState<GameItem[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -152,6 +155,9 @@ export default function DashboardClient() {
   const [spinSeconds, setSpinSeconds] = useState<number>(4.2);
   const [error, setError] = useState<string>("");
   const [poolSeeded, setPoolSeeded] = useState(false);
+  const [isPicking, setIsPicking] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [activeWheelItem, setActiveWheelItem] = useState<WheelItem | null>(null);
   const autoSyncRef = useRef(false);
   const wheelRef = useRef<AuctionWheelHandle | null>(null);
 
@@ -175,6 +181,27 @@ export default function DashboardClient() {
     () => filteredIntersection.slice(0, 12),
     [filteredIntersection]
   );
+  const spinningItem = activeWheelItem ?? filteredIntersection[0] ?? null;
+  const canUseSteam = authReady && isLoggedIn;
+  const hasFriendSelection = selectedFriendIds.length > 0;
+  const hasMyGames = myGames.length > 0;
+  const hasWheelItems = filteredIntersection.length > 0;
+  const canLoadShared = canUseSteam && hasFriendSelection && hasMyGames;
+  const canCreatePool = canUseSteam && hasFriendSelection;
+  const canAddToPool = canUseSteam && Boolean(pool?.id) && intersection.length > 0;
+  const hasPoolOrFriend = Boolean(pool?.id) || hasFriendSelection;
+  const canPick = canUseSteam && hasWheelItems && hasPoolOrFriend && !isPicking;
+  const pickDisabledReason = isPicking
+    ? "Pick laeuft..."
+    : !authReady
+      ? "Session wird geladen..."
+      : !isLoggedIn
+        ? "Bitte erst mit Steam verbinden."
+        : !hasWheelItems
+          ? "Keine passenden Spiele im Wheel."
+          : !hasPoolOrFriend
+            ? "Bitte zuerst einen Freund waehlen."
+            : undefined;
 
   const loadUser = useCallback(async () => {
     try {
@@ -182,6 +209,8 @@ export default function DashboardClient() {
       setUser(data.user);
     } catch {
       setUser(null);
+    } finally {
+      setAuthReady(true);
     }
   }, []);
 
@@ -195,18 +224,24 @@ export default function DashboardClient() {
   }, []);
 
   async function logout() {
-    await fetch("/api/logout", { method: "POST" });
-    setUser(null);
-    setFriends([]);
-    setMyGames([]);
-    setFriendGames([]);
-    setSelectedFriendIds([]);
-    setPool(null);
-    setPickResult("");
-    setPickImage(null);
-    setStatus("Ausgeloggt.");
-    setError("");
-    autoSyncRef.current = false;
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/logout", { method: "POST" });
+      setUser(null);
+      setFriends([]);
+      setMyGames([]);
+      setFriendGames([]);
+      setSelectedFriendIds([]);
+      setPool(null);
+      setPickResult("");
+      setPickImage(null);
+      setStatus("Ausgeloggt.");
+      setError("");
+      autoSyncRef.current = false;
+    } finally {
+      setIsLoggingOut(false);
+    }
   }
 
   async function deleteFriend(id: string) {
@@ -289,7 +324,8 @@ export default function DashboardClient() {
   }, [loadFriends, user?.steamId]);
 
   async function addFriend() {
-    if (!friendSteamId) {
+    const trimmed = friendSteamId.trim();
+    if (!trimmed) {
       setError("Bitte eine SteamID eingeben.");
       return;
     }
@@ -299,7 +335,7 @@ export default function DashboardClient() {
       await safeFetchJson<{ friend: Friend }>("/api/friends", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ steamId: friendSteamId }),
+        body: JSON.stringify({ steamId: trimmed }),
       });
       setFriendSteamId("");
       await loadFriends();
@@ -397,7 +433,7 @@ export default function DashboardClient() {
     }
   }
 
-  async function createPool() {
+  async function createPool(options?: { seedPool?: boolean }) {
     if (selectedFriendIds.length === 0) {
       setError("Bitte waehle einen Freund aus.");
       return;
@@ -406,6 +442,7 @@ export default function DashboardClient() {
     setError("");
     setPoolSeeded(false);
     const firstFriend = selectedFriendIds[0];
+    const shouldSeed = options?.seedPool ?? true;
     try {
       const data = await safeFetchJson<{ pool: Pool }>("/api/pools", {
         method: "POST",
@@ -413,14 +450,18 @@ export default function DashboardClient() {
         body: JSON.stringify({ friendId: firstFriend, name: "Auction Pool" }),
       });
       setPool(data.pool);
-      if (intersection.length > 0) {
+      if (shouldSeed && intersection.length > 0) {
         await addIntersectionToPool(data.pool.id);
-      } else {
+      } else if (shouldSeed) {
         setStatus("Pool erstellt. Keine gemeinsamen Spiele vorhanden.");
+      } else {
+        setStatus("Pool erstellt.");
       }
+      return data.pool;
     } catch (err) {
       setError(getErrorMessage(err));
       setStatus("");
+      return null;
     }
   }
 
@@ -479,19 +520,45 @@ export default function DashboardClient() {
   }
 
   async function pickGame() {
-    if (!pool?.id) {
-      setError("Bitte zuerst einen Pool erstellen.");
+    if (isPicking) return;
+    if (filteredIntersection.length === 0) {
+      setError("Keine passenden Spiele im Wheel.");
       return;
     }
+    let poolId = pool?.id;
+    let shouldSeed = false;
+    if (!poolId) {
+      if (selectedFriendIds.length === 0) {
+        setError("Bitte zuerst einen Freund waehlen.");
+        return;
+      }
+      const created = await createPool({ seedPool: false });
+      poolId = created?.id;
+      if (!poolId) {
+        setError("Pool konnte nicht erstellt werden.");
+        return;
+      }
+      shouldSeed = true;
+    }
+    if ((shouldSeed || !poolSeeded) && intersection.length > 0) {
+      await addIntersectionToPool(poolId);
+    }
+    setPickResult("");
+    setPickImage(null);
+    setIsPicking(true);
     setStatus("Spiel wird ausgewaehlt...");
     setError("");
     try {
       const data = await safeFetchJson<{ pick?: { name: string; appId?: number }; error?: string }>(
-        `/api/pools/${pool.id}/pick`,
+        `/api/pools/${poolId}/pick`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode: pickMode, avoidCount }),
+          body: JSON.stringify({
+            mode: pickMode,
+            avoidCount,
+            appIds: filteredIntersection.map((g) => g.appid),
+          }),
         }
       );
       if (data.error) {
@@ -523,6 +590,8 @@ export default function DashboardClient() {
     } catch (err) {
       setError(getErrorMessage(err));
       setStatus("");
+    } finally {
+      setIsPicking(false);
     }
   }
 
@@ -543,6 +612,11 @@ export default function DashboardClient() {
     }, 0);
     return () => window.clearTimeout(t);
   }, [fetchFriendList, fetchMyGames, user?.steamId]);
+
+  useEffect(() => {
+    if (!pool?.id) return;
+    setPoolSeeded(false);
+  }, [selectedFriendIds, intersection.length]);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -565,14 +639,20 @@ export default function DashboardClient() {
             <div>
               <h2 className="font-display text-lg text-white">Status & Login</h2>
               <p className="text-muted mt-1 text-sm">
-                {isLoggedIn
-                  ? `Eingeloggt als ${user?.displayName ?? user?.steamId}`
-                  : "Nicht eingeloggt. Verbinde Steam, um Spiele zu laden."}
+                {!authReady
+                  ? "Session wird geladen..."
+                  : isLoggedIn
+                    ? `Eingeloggt als ${user?.displayName ?? user?.steamId}`
+                    : "Nicht eingeloggt. Verbinde Steam, um Spiele zu laden."}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {!isLoggedIn ? (
+            {!authReady ? (
+              <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-300">
+                Session wird geladen...
+              </span>
+            ) : !isLoggedIn ? (
               <a
                 id="btn-steam-login"
                 className="btn-animated inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-[0_12px_30px_rgba(245,158,11,0.25)] hover:scale-[1.02]"
@@ -587,8 +667,9 @@ export default function DashboardClient() {
                   Verbunden
                 </span>
                 <button
-                  className="btn-animated rounded-full border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40"
+                  className="btn-animated rounded-full border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
                   onClick={logout}
+                  disabled={isLoggingOut}
                 >
                   Logout
                 </button>
@@ -613,20 +694,27 @@ export default function DashboardClient() {
         <div className="mt-4 flex flex-wrap gap-3">
           <button
             id="btn-load-games"
-            className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02] active:scale-95"
+            className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
             onClick={fetchMyGames}
-            disabled={!isLoggedIn}
+            disabled={!canUseSteam}
           >
             <IconRefresh className="h-4 w-4" />
             Meine Spiele laden
           </button>
-          <Link
-            className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
-            href="/pools"
-          >
-            <IconStack className="h-4 w-4" />
-            Pools ansehen
-          </Link>
+          {canUseSteam ? (
+            <Link
+              className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+              href="/pools"
+            >
+              <IconStack className="h-4 w-4" />
+              Pools ansehen
+            </Link>
+          ) : (
+            <span className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-slate-400 opacity-60">
+              <IconStack className="h-4 w-4" />
+              Pools ansehen
+            </span>
+          )}
         </div>
       </section>
 
@@ -640,9 +728,9 @@ export default function DashboardClient() {
           </div>
           <button
             id="btn-load-friends"
-            className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+            className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
             onClick={fetchFriendList}
-            disabled={!isLoggedIn}
+            disabled={!canUseSteam}
           >
             <IconUsers className="h-4 w-4" />
             Steam-Freunde laden
@@ -651,15 +739,16 @@ export default function DashboardClient() {
 
         <div className="mt-4 flex flex-wrap gap-3">
           <input
-            className="w-60 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+            className="w-full max-w-xs rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white disabled:opacity-60"
             placeholder="Friend SteamID"
             value={friendSteamId}
             onChange={(event) => setFriendSteamId(event.target.value)}
+            disabled={!canUseSteam}
           />
           <button
-            className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02]"
+            className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             onClick={addFriend}
-            disabled={!isLoggedIn}
+            disabled={!canUseSteam || friendSteamId.trim().length === 0}
           >
             <IconPlus className="h-4 w-4" />
             Freund speichern
@@ -695,9 +784,9 @@ export default function DashboardClient() {
                   .map((friend) => (
                     <div
                       key={friend.id}
-                      className="flex items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-white/5"
+                      className="flex min-w-0 items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-white/5"
                     >
-                      <label className="flex items-center gap-3">
+                      <label className="flex min-w-0 items-center gap-3">
                         <input
                           type="checkbox"
                           checked={selectedFriendIds.includes(friend.id)}
@@ -710,10 +799,12 @@ export default function DashboardClient() {
                           }
                           className="h-4 w-4"
                         />
-                        <div className="text-sm text-slate-200">{friend.displayName ?? friend.steamId}</div>
+                        <div className="truncate text-sm text-slate-200">
+                          {friend.displayName ?? friend.steamId}
+                        </div>
                       </label>
                       <button
-                        className="text-xs text-rose-300 hover:text-rose-200"
+                        className="flex-shrink-0 text-xs text-rose-300 hover:text-rose-200"
                         onClick={() => void deleteFriend(friend.id)}
                         aria-label="Delete friend"
                         title="Delete friend"
@@ -729,25 +820,25 @@ export default function DashboardClient() {
           <div className="flex flex-col gap-3">
             <div className="flex gap-2">
               <button
-                className="btn-animated rounded-full border border-white/20 px-3 py-1 text-sm text-white hover:border-white/40"
+                className="btn-animated rounded-full border border-white/20 px-3 py-1 text-sm text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={() => setSelectedFriendIds(friends.map((f) => f.id))}
-                disabled={friends.length === 0}
+                disabled={!canUseSteam || friends.length === 0}
               >
                 Alle waehlen
               </button>
               <button
-                className="btn-animated rounded-full border border-white/20 px-3 py-1 text-sm text-white hover:border-white/40"
+                className="btn-animated rounded-full border border-white/20 px-3 py-1 text-sm text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
                 onClick={() => setSelectedFriendIds([])}
-                disabled={selectedFriendIds.length === 0}
+                disabled={!canUseSteam || selectedFriendIds.length === 0}
               >
                 Auswahl loeschen
               </button>
             </div>
             <button
               id="btn-load-shared"
-              className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+              className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => void fetchSelectedFriendsGames()}
-              disabled={selectedFriendIds.length === 0}
+              disabled={!canLoadShared}
             >
               <IconIntersect className="h-4 w-4" />
               Gemeinsame Spiele laden
@@ -786,10 +877,10 @@ export default function DashboardClient() {
             {previewGames.map((game) => (
               <div
                 key={game.appid}
-                className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200"
+                className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200"
               >
-                <span>{game.name}</span>
-                <span className="text-xs text-slate-400">#{game.appid}</span>
+                <span className="min-w-0 flex-1 truncate">{game.name}</span>
+                <span className="ml-3 flex-shrink-0 text-xs text-slate-400">#{game.appid}</span>
               </div>
             ))}
           </div>
@@ -811,18 +902,18 @@ export default function DashboardClient() {
           <div className="flex flex-wrap gap-3">
             <button
               id="btn-create-pool"
-              className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02]"
+              className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
               onClick={createPool}
-              disabled={selectedFriendIds.length === 0}
+              disabled={!canCreatePool}
             >
               <IconStack className="h-4 w-4" />
               Pool erstellen
             </button>
             <button
               id="btn-add-shared"
-              className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+              className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => void addIntersectionToPool()}
-              disabled={!pool?.id || intersection.length === 0}
+              disabled={!canAddToPool}
             >
               <IconPlus className="h-4 w-4" />
               Spiele hinzufuegen
@@ -834,9 +925,10 @@ export default function DashboardClient() {
           <div className="flex items-center gap-2">
             <label className="text-sm text-slate-300">Modus:</label>
             <select
-              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
               value={pickMode}
               onChange={(e) => setPickMode(e.target.value as "pure" | "avoid")}
+              disabled={!canUseSteam || isPicking}
             >
               <option value="pure">Zufall (pure)</option>
               <option value="avoid">Avoid repeats</option>
@@ -846,23 +938,37 @@ export default function DashboardClient() {
           <div className="flex items-center gap-2">
             <label className="text-sm text-slate-300">Avoid:</label>
             <input
-              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white"
+              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
               type="number"
               min={1}
+              step={1}
               value={avoidCount}
-              onChange={(e) => setAvoidCount(Number(e.target.value))}
+              onChange={(e) => {
+                const next = Number(e.target.value);
+                setAvoidCount((prev) =>
+                  Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev
+                );
+              }}
+              disabled={pickMode !== "avoid" || !canUseSteam || isPicking}
             />
           </div>
 
           <div className="flex items-center gap-2">
             <label className="text-sm text-slate-300">Spin (s):</label>
             <input
-              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white"
+              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
               type="number"
               step={0.1}
-              min={0.5}
+              min={1}
               value={spinSeconds}
-              onChange={(e) => setSpinSeconds(Number(e.target.value))}
+              onChange={(e) => {
+                const next = Number(e.target.value);
+                setSpinSeconds((prev) => {
+                  if (!Number.isFinite(next)) return prev;
+                  return Math.min(12, Math.max(1, next));
+                });
+              }}
+              disabled={!canUseSteam || isPicking}
             />
           </div>
         </div>
@@ -872,37 +978,72 @@ export default function DashboardClient() {
             ref={wheelRef}
             items={filteredIntersection.map((g) => ({ appid: g.appid, name: g.name }))}
             onCenterClick={() => void pickGame()}
+            disabled={!canPick}
+            disabledReason={pickDisabledReason}
+            allowDrag={false}
+            onActiveItemChange={(item) =>
+              setActiveWheelItem(item ? { appid: item.appid, name: item.name } : null)
+            }
           />
         </div>
 
-        {pickResult ? (
+        {isPicking || pickResult ? (
           <div
             className={`mt-4 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-200 transition ${
               pickPulse ? "animate-reveal-pick animate-pulse-once" : ""
             }`}
           >
-            <div className="flex items-center gap-3">
-              {pickImage ? (
-                <Image
-                  src={pickImage}
-                  alt={pickResult}
-                  width={460}
-                  height={215}
-                  className="h-16 w-28 rounded-md object-cover shadow-md"
-                  sizes="(max-width: 768px) 112px, 112px"
-                  onError={(e) => {
-                    const t = e.currentTarget as HTMLImageElement;
-                    if (!t.src.includes("header.jpg")) {
-                      t.src = "https://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
-                    }
-                  }}
-                />
-              ) : null}
-              <div>
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
-                <div className="text-lg font-semibold">{pickResult}</div>
+            {isPicking ? (
+              spinningItem ? (
+                <div className="flex items-center gap-3">
+                  <Image
+                    src={`https://cdn.akamai.steamstatic.com/steam/apps/${spinningItem.appid}/header.jpg`}
+                    alt={spinningItem.name}
+                    width={460}
+                    height={215}
+                    className="h-16 w-28 rounded-md object-cover shadow-md"
+                    sizes="(max-width: 768px) 112px, 112px"
+                    onError={(e) => {
+                      const t = e.currentTarget as HTMLImageElement;
+                      if (!t.src.includes("/apps/0/")) {
+                        t.src = "https://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
+                      }
+                    }}
+                  />
+                  <div className="min-w-0">
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Unter Pfeil</div>
+                    <div className="text-lg font-semibold leading-tight break-words">
+                      {spinningItem.name}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-300">Wheel dreht...</div>
+              )
+            ) : (
+              <div className="flex items-center gap-3">
+                {pickImage ? (
+                  <Image
+                    src={pickImage}
+                    alt={pickResult}
+                    width={460}
+                    height={215}
+                    className="h-16 w-28 rounded-md object-cover shadow-md"
+                    sizes="(max-width: 768px) 112px, 112px"
+                    onError={(e) => {
+                      const t = e.currentTarget as HTMLImageElement;
+                      if (!t.src.includes("/apps/0/")) {
+                        t.src = "https://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
+                      }
+                    }}
+                  />
+                ) : null}
+                <div className="min-w-0">
+                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
+                  <div className="text-lg font-semibold leading-tight break-words">{pickResult}</div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ) : null}
 

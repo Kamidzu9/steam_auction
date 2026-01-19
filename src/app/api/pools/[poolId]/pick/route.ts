@@ -14,7 +14,7 @@ import { pickWeighted } from "@/lib/pickUtils";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { poolId: string } }
+  { params }: { params: { poolId: string } | Promise<{ poolId: string }> }
 ) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("steam_user_id")?.value;
@@ -23,10 +23,14 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { poolId } = params;
+  const { poolId } = await Promise.resolve(params);
+  if (!poolId) {
+    return NextResponse.json({ error: "Missing poolId" }, { status: 400 });
+  }
   const body = (await request.json().catch(() => ({}))) as {
     mode?: "pure" | "avoid";
     avoidCount?: number;
+    appIds?: number[];
   };
 
   const pool = await prisma.auctionPool.findFirst({
@@ -53,13 +57,27 @@ export async function POST(
       weight: number;
       game: { appId: number; name: string; storeUrl: string };
     }) => ({
-    id: pg.gameId,
-    name: pg.game.name,
-    appId: pg.game.appId,
-    storeUrl: pg.game.storeUrl,
-    weight: pg.weight,
+      id: pg.gameId,
+      name: pg.game.name,
+      appId: pg.game.appId,
+      storeUrl: pg.game.storeUrl,
+      weight: pg.weight,
     })
   );
+
+  if (Array.isArray(body.appIds) && body.appIds.length > 0) {
+    const allowed = new Set(
+      body.appIds
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value))
+    );
+    if (allowed.size > 0) {
+      const filtered = candidates.filter((game) => allowed.has(game.appId));
+      if (filtered.length > 0) {
+        candidates = filtered;
+      }
+    }
+  }
 
   if (body.mode === "avoid" && (body.avoidCount ?? 0) > 0) {
     const recent = await prisma.pickHistory.findMany({
