@@ -192,7 +192,7 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
                     }}
                   />
                   <div className="min-w-0">
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Unter Pfeil</div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
                     <div className="text-lg font-semibold leading-tight break-words">
                       {spinningItem.name}
                     </div>
