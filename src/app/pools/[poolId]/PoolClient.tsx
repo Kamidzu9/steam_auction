@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AuctionWheel, { AuctionWheelHandle } from "@/components/AuctionWheel";
 
 type PoolGame = {
@@ -42,12 +42,48 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
   const [pickPulse, setPickPulse] = useState(false);
   const [isPicking, setIsPicking] = useState(false);
   const [activeWheelItem, setActiveWheelItem] = useState<WheelItem | null>(null);
-  const canPick = games.length > 0 && !isPicking;
+  const [recentAvoidAppIds, setRecentAvoidAppIds] = useState<number[]>([]);
+
+  const wheelGames = useMemo(() => {
+    if (pickMode !== "avoid" || avoidCount <= 0 || recentAvoidAppIds.length === 0) {
+      return games;
+    }
+    const blocked = new Set(recentAvoidAppIds);
+    return games.filter((game) => !blocked.has(game.appId));
+  }, [avoidCount, games, pickMode, recentAvoidAppIds]);
+
+  const canPick = wheelGames.length > 0 && !isPicking;
   const spinningItem =
-    activeWheelItem ?? (games[0] ? { appid: games[0].appId, name: games[0].name } : null);
+    activeWheelItem ?? (wheelGames[0] ? { appid: wheelGames[0].appId, name: wheelGames[0].name } : null);
+
+  const refreshRecentAvoid = useCallback(async () => {
+    if (pickMode !== "avoid" || avoidCount <= 0) {
+      setRecentAvoidAppIds([]);
+      return;
+    }
+    try {
+      const data = await safeFetchJson<{ appIds?: number[] }>(
+        `/api/pools/${poolId}/recent-picks?limit=${avoidCount}`
+      );
+      const appIds = Array.isArray(data.appIds)
+        ? data.appIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+        : [];
+      setRecentAvoidAppIds(appIds);
+    } catch {
+      setRecentAvoidAppIds([]);
+    }
+  }, [avoidCount, pickMode, poolId]);
+
+  useEffect(() => {
+    void refreshRecentAvoid();
+  }, [refreshRecentAvoid]);
 
   async function pickGame() {
     if (isPicking) return;
+    if (wheelGames.length === 0) {
+      setError("Keine passenden Spiele im Wheel.");
+      return;
+    }
     setPickResult("");
     setPickImage(null);
     setIsPicking(true);
@@ -59,7 +95,11 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mode: pickMode, avoidCount }),
+          body: JSON.stringify({
+            mode: pickMode,
+            avoidCount,
+            appIds: wheelGames.map((game) => game.appId),
+          }),
         }
       );
       if (data.error) {
@@ -93,6 +133,7 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
       setStatus("");
     } finally {
       setIsPicking(false);
+      void refreshRecentAvoid();
     }
   }
 
@@ -154,7 +195,7 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
         <div id="wheel" className="mt-6 flex items-center justify-center">
           <AuctionWheel
             ref={wheelRef}
-            items={games.map((g) => ({ appid: g.appId, name: g.name }))}
+            items={wheelGames.map((g) => ({ appid: g.appId, name: g.name }))}
             onCenterClick={() => void pickGame()}
             disabled={!canPick}
             disabledReason={isPicking ? "Pick laeuft..." : undefined}

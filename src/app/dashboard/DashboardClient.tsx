@@ -158,6 +158,7 @@ export default function DashboardClient() {
   const [isPicking, setIsPicking] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [activeWheelItem, setActiveWheelItem] = useState<WheelItem | null>(null);
+  const [recentAvoidAppIds, setRecentAvoidAppIds] = useState<number[]>([]);
   const autoSyncRef = useRef(false);
   const wheelRef = useRef<AuctionWheelHandle | null>(null);
 
@@ -177,15 +178,20 @@ export default function DashboardClient() {
     });
   }, [intersection, selectedTags, gameTagsMap]);
 
-  const previewGames = useMemo(
-    () => filteredIntersection.slice(0, 12),
-    [filteredIntersection]
-  );
-  const spinningItem = activeWheelItem ?? filteredIntersection[0] ?? null;
+  const wheelItems = useMemo(() => {
+    if (pickMode !== "avoid" || avoidCount <= 0 || recentAvoidAppIds.length === 0) {
+      return filteredIntersection;
+    }
+    const blocked = new Set(recentAvoidAppIds);
+    return filteredIntersection.filter((game) => !blocked.has(game.appid));
+  }, [avoidCount, filteredIntersection, pickMode, recentAvoidAppIds]);
+
+  const previewGames = useMemo(() => wheelItems.slice(0, 12), [wheelItems]);
+  const spinningItem = activeWheelItem ?? wheelItems[0] ?? null;
   const canUseSteam = authReady && isLoggedIn;
   const hasFriendSelection = selectedFriendIds.length > 0;
   const hasMyGames = myGames.length > 0;
-  const hasWheelItems = filteredIntersection.length > 0;
+  const hasWheelItems = wheelItems.length > 0;
   const canLoadShared = canUseSteam && hasFriendSelection && hasMyGames;
   const canCreatePool = canUseSteam && hasFriendSelection;
   const canAddToPool = canUseSteam && Boolean(pool?.id) && intersection.length > 0;
@@ -222,6 +228,24 @@ export default function DashboardClient() {
       setFriends([]);
     }
   }, []);
+
+  const refreshRecentAvoid = useCallback(async () => {
+    if (pickMode !== "avoid" || avoidCount <= 0 || !pool?.id) {
+      setRecentAvoidAppIds([]);
+      return;
+    }
+    try {
+      const data = await safeFetchJson<{ appIds?: number[] }>(
+        `/api/pools/${pool.id}/recent-picks?limit=${avoidCount}`
+      );
+      const appIds = Array.isArray(data.appIds)
+        ? data.appIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+        : [];
+      setRecentAvoidAppIds(appIds);
+    } catch {
+      setRecentAvoidAppIds([]);
+    }
+  }, [avoidCount, pickMode, pool?.id]);
 
   async function logout() {
     if (isLoggingOut) return;
@@ -521,7 +545,7 @@ export default function DashboardClient() {
 
   async function pickGame() {
     if (isPicking) return;
-    if (filteredIntersection.length === 0) {
+    if (wheelItems.length === 0) {
       setError("Keine passenden Spiele im Wheel.");
       return;
     }
@@ -557,7 +581,7 @@ export default function DashboardClient() {
           body: JSON.stringify({
             mode: pickMode,
             avoidCount,
-            appIds: filteredIntersection.map((g) => g.appid),
+            appIds: wheelItems.map((g) => g.appid),
           }),
         }
       );
@@ -592,6 +616,7 @@ export default function DashboardClient() {
       setStatus("");
     } finally {
       setIsPicking(false);
+      void refreshRecentAvoid();
     }
   }
 
@@ -617,6 +642,10 @@ export default function DashboardClient() {
     if (!pool?.id) return;
     setPoolSeeded(false);
   }, [selectedFriendIds, intersection.length]);
+
+  useEffect(() => {
+    void refreshRecentAvoid();
+  }, [refreshRecentAvoid]);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -976,7 +1005,7 @@ export default function DashboardClient() {
         <div id="wheel" className="mt-6 flex items-center justify-center">
           <AuctionWheel
             ref={wheelRef}
-            items={filteredIntersection.map((g) => ({ appid: g.appid, name: g.name }))}
+            items={wheelItems.map((g) => ({ appid: g.appid, name: g.name }))}
             onCenterClick={() => void pickGame()}
             disabled={!canPick}
             disabledReason={pickDisabledReason}
