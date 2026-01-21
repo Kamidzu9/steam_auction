@@ -99,3 +99,17 @@ model PickHistory {
   pool AuctionPool @relation(fields: [poolId], references: [id])
   game Game        @relation(fields: [gameId], references: [id])
 }
+
+model Session {
+  id               String   @id @default(cuid())
+  userId           String
+  refreshTokenHash String
+  expiresAt        DateTime
+  revoked          Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  lastUsedAt       DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}

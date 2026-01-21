@@ -3,6 +3,7 @@ import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ClientHelpers from "../components/ClientHelpers";
 import BottomNav from "../components/BottomNav";
+import { isAuthenticated } from "../lib/session";
 
 const manrope = Manrope({
   variable: "--font-sans",
@@ -19,11 +20,13 @@ export const metadata: Metadata = {
   description: "Compare Steam libraries and pick a random co-op game.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const showBottomNav = await isAuthenticated();
+
   return (
     <html lang="de" suppressHydrationWarning={true}>
       <head>
@@ -51,7 +54,7 @@ export default function RootLayout({
           </footer>
         </main>
 
-        <BottomNav />
+        {showBottomNav && <BottomNav />}
 
         {/* Client-only helpers (service worker, install prompt, tutorial) */}
         <ClientHelpers />

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifySteamOpenId } from "@/lib/steam";
 import { getPlayerSummaries } from "@/lib/steam-api";
+import { createSession } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -50,15 +51,28 @@ export async function GET(request: NextRequest) {
 
   console.log("[auth/steam/callback] upserted user id=", user.id);
 
+  // create session and set cookies (sid + refresh)
+  const { sessionId, refreshToken, expiresAt } = await createSession(user.id);
+
   const response = NextResponse.redirect(new URL("/dashboard", request.url));
-  response.cookies.set("steam_user_id", String(user.id), {
+  response.cookies.set("sid", String(sessionId), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
+    // short-lived session id cookie
+    expires: new Date(Date.now() + 60 * 60 * 1000),
   });
 
-  console.log("[auth/steam/callback] set-cookie steam_user_id", user.id);
+  response.cookies.set("refresh", String(refreshToken), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/api/auth",
+    expires: expiresAt,
+  });
+
+  console.log("[auth/steam/callback] set-session", user.id, sessionId);
 
   return response;
 }
