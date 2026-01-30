@@ -22,10 +22,10 @@ export async function GET(request: NextRequest) {
     const data = entry.data ?? {};
     const categories = (Array.isArray(data.categories) ? data.categories : [])
       .map((c: { description?: string }) => c.description)
-      .filter((value): value is string => Boolean(value));
+      .filter((value: string | undefined): value is string => Boolean(value));
     const genres = (Array.isArray(data.genres) ? data.genres : [])
       .map((g: { description?: string }) => g.description)
-      .filter((value): value is string => Boolean(value));
+      .filter((value: string | undefined): value is string => Boolean(value));
 
     return NextResponse.json({ categories, genres, data });
   } catch {

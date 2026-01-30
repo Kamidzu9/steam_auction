@@ -19,6 +19,7 @@ model User {
   ownedGames     Ownership[]
   poolsCreated   AuctionPool[] @relation("PoolOwner")
   pickHistory    PickHistory[]
+  sessions       Session[]
 }
 
 model Friend {
@@ -94,6 +95,9 @@ model PickHistory {
   poolId    String
   gameId    String
   pickedAt  DateTime @default(now())
+  mode      String   @default("pure")
+  avoidCount Int?
+  candidateAppIds Json?
 
   user User        @relation(fields: [userId], references: [id])
   pool AuctionPool @relation(fields: [poolId], references: [id])

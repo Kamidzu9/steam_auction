@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { validateRefreshToken, rotateRefreshToken } from "@/lib/session";
 
 export async function POST() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const refresh = cookieStore.get("refresh")?.value;
   const validated = await validateRefreshToken(refresh ?? undefined);
 

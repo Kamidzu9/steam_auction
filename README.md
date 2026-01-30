@@ -1,3 +1,15 @@
+# Minimal Next.js App
+
+This repository was reset to a minimal Next.js (App Router) TypeScript scaffold.
+
+To run locally:
+
+```bash
+npm install
+npm run dev
+```
+
+If you want me to remove the old backend/Prisma code and tests, confirm and I'll delete them (a backup was created).
 # Steam Auction MVP
 
 Compare Steam libraries with friends and pick a random co-op game from a shared auction pool.

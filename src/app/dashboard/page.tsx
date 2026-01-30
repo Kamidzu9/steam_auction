@@ -1,5 +1,16 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import DashboardClient from "./DashboardClient";
+
+function DashboardFallback() {
+  return (
+    <div className="surface rounded-2xl p-6 animate-pulse">
+      <div className="h-6 w-48 bg-white/10 rounded mb-4"></div>
+      <div className="h-4 w-full bg-white/10 rounded mb-2"></div>
+      <div className="h-4 w-3/4 bg-white/10 rounded"></div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   return (
@@ -18,7 +29,9 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <DashboardClient />
+      <Suspense fallback={<DashboardFallback />}>
+        <DashboardClient />
+      </Suspense>
 
       <section className="surface rounded-2xl p-6">
         <h2 className="font-display text-lg text-white">Schnellstart</h2>

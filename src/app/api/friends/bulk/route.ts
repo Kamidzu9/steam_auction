@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserId } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("steam_user_id")?.value;
+  const userId = await getCurrentUserId();
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -3,8 +3,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { validateSessionById } from "@/lib/session";
 
-export default async function ProfilePage(): Promise<JSX.Element> {
-  const sid = cookies().get("sid")?.value ?? null;
+export default async function ProfilePage() {
+  const cookieStore = await cookies();
+  const sid = cookieStore.get("sid")?.value ?? null;
   const session = sid ? await validateSessionById(sid) : null;
 
   if (!session) {

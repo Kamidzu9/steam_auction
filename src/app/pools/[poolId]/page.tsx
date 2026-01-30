@@ -1,13 +1,12 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserId } from "@/lib/session";
 import PoolClient from "./PoolClient";
 
-export default async function PoolPage({ params }: { params: { poolId: string } }) {
-  const { poolId } = params;
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("steam_user_id")?.value;
+export default async function PoolPage({ params }: { params: { poolId: string } | Promise<{ poolId: string }> }) {
+  const { poolId } = await Promise.resolve(params);
+  const userId = await getCurrentUserId();
 
   if (!userId) {
     redirect("/dashboard");
@@ -44,6 +43,9 @@ export default async function PoolPage({ params }: { params: { poolId: string } 
           Friend: {pool.friend?.displayName ?? pool.friend?.steamId ?? "Unknown"}
         </p>
         <p className="text-muted mt-1 text-sm">Games: {games.length}</p>
+        <p className="text-muted mt-1 text-sm">
+          Erstellt: {new Date(pool.createdAt).toLocaleDateString("de-DE")}
+        </p>
       </section>
 
       {games.length === 0 ? (
@@ -79,7 +81,11 @@ export default async function PoolPage({ params }: { params: { poolId: string } 
           <div className="mt-3 grid gap-2 text-sm text-slate-300 md:grid-cols-2">
             {pool.picks.map((pick) => (
               <div key={pick.id} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-                {pick.game?.name ?? "Unknown"}
+                <div className="text-white">{pick.game?.name ?? "Unknown"}</div>
+                <div className="text-xs text-slate-400">
+                  {new Date(pick.pickedAt).toLocaleString("de-DE")} • {pick.mode}
+                  {pick.mode === "avoid" && pick.avoidCount ? ` (avoid ${pick.avoidCount})` : ""}
+                </div>
               </div>
             ))}
           </div>

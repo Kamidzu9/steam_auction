@@ -37,14 +37,7 @@ type Pool = {
 };
 
 type WheelItem = { appid: number; name: string };
-
-const COMMON_TAG_OPTIONS = [
-  "coop",
-  "multiplayer",
-  "single-player",
-  "online co-op",
-  "local co-op",
-];
+type SpinState = "idle" | "preparing" | "spinning" | "result";
 
 type ApiErrorResponse = { error?: string };
 
@@ -155,7 +148,7 @@ export default function DashboardClient() {
   const [spinSeconds, setSpinSeconds] = useState<number>(4.2);
   const [error, setError] = useState<string>("");
   const [poolSeeded, setPoolSeeded] = useState(false);
-  const [isPicking, setIsPicking] = useState(false);
+  const [spinState, setSpinState] = useState<SpinState>("idle");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [activeWheelItem, setActiveWheelItem] = useState<WheelItem | null>(null);
   const [recentAvoidAppIds, setRecentAvoidAppIds] = useState<number[]>([]);
@@ -174,7 +167,7 @@ export default function DashboardClient() {
     return intersection.filter((g) => {
       const tags = gameTagsMap[g.appid] ?? [];
       if (!tags || tags.length === 0) return false;
-      return selectedTags.every((t) => tags.includes(t.toLowerCase()));
+      return selectedTags.some((t) => tags.includes(t.toLowerCase()));
     });
   }, [intersection, selectedTags, gameTagsMap]);
 
@@ -194,11 +187,14 @@ export default function DashboardClient() {
   const hasWheelItems = wheelItems.length > 0;
   const canLoadShared = canUseSteam && hasFriendSelection && hasMyGames;
   const canCreatePool = canUseSteam && hasFriendSelection;
-  const canAddToPool = canUseSteam && Boolean(pool?.id) && intersection.length > 0;
+  const canAddToPool = canUseSteam && Boolean(pool?.id) && filteredIntersection.length > 0;
   const hasPoolOrFriend = Boolean(pool?.id) || hasFriendSelection;
-  const canPick = canUseSteam && hasWheelItems && hasPoolOrFriend && !isPicking;
-  const pickDisabledReason = isPicking
-    ? "Pick laeuft..."
+  const isSpinBusy = spinState === "preparing" || spinState === "spinning";
+  const canPick = canUseSteam && hasWheelItems && hasPoolOrFriend && !isSpinBusy;
+  const pickDisabledReason = isSpinBusy
+    ? spinState === "preparing"
+      ? "Spin wird vorbereitet..."
+      : "Wheel dreht..."
     : !authReady
       ? "Session wird geladen..."
       : !isLoggedIn
@@ -211,7 +207,7 @@ export default function DashboardClient() {
 
   const loadUser = useCallback(async () => {
     try {
-      const data = await safeFetchJson<{ user: User | null }>("/api/me");
+      const data = await safeFetchJson<{ user: User | null }>("/api/me", { cache: "no-store" });
       setUser(data.user);
     } catch {
       setUser(null);
@@ -347,6 +343,14 @@ export default function DashboardClient() {
     }
   }, [loadFriends, user?.steamId]);
 
+  function toggleTagPreset(nextTags: string[]) {
+    setSelectedTags((prev) => {
+      const prevKey = prev.join("|");
+      const nextKey = nextTags.join("|");
+      return prevKey === nextKey ? [] : nextTags;
+    });
+  }
+
   async function addFriend() {
     const trimmed = friendSteamId.trim();
     if (!trimmed) {
@@ -474,7 +478,7 @@ export default function DashboardClient() {
         body: JSON.stringify({ friendId: firstFriend, name: "Auction Pool" }),
       });
       setPool(data.pool);
-      if (shouldSeed && intersection.length > 0) {
+      if (shouldSeed && filteredIntersection.length > 0) {
         await addIntersectionToPool(data.pool.id);
       } else if (shouldSeed) {
         setStatus("Pool erstellt. Keine gemeinsamen Spiele vorhanden.");
@@ -495,8 +499,8 @@ export default function DashboardClient() {
       setError("Bitte zuerst einen Pool erstellen.");
       return;
     }
-    if (intersection.length === 0) {
-      setError("Keine gemeinsamen Spiele geladen.");
+    if (filteredIntersection.length === 0) {
+      setError("Keine passenden Spiele geladen.");
       return;
     }
     setStatus("Gemeinsame Spiele werden hinzugefuegt...");
@@ -505,7 +509,7 @@ export default function DashboardClient() {
     let failed = 0;
     const skippedNames: string[] = [];
 
-    for (const game of intersection) {
+    for (const game of filteredIntersection) {
       try {
         const res = await fetch(`/api/pools/${poolId}/games`, {
           method: "POST",
@@ -544,34 +548,41 @@ export default function DashboardClient() {
   }
 
   async function pickGame() {
-    if (isPicking) return;
+    if (isSpinBusy) return;
     if (wheelItems.length === 0) {
       setError("Keine passenden Spiele im Wheel.");
       return;
     }
+    setSpinState("preparing");
+    setStatus("Bereite Spin vor...");
+    setError("");
+    await new Promise((resolve) => setTimeout(resolve, 450));
     let poolId = pool?.id;
     let shouldSeed = false;
     if (!poolId) {
       if (selectedFriendIds.length === 0) {
         setError("Bitte zuerst einen Freund waehlen.");
+        setSpinState("idle");
         return;
       }
+      setStatus("Pool wird erstellt...");
       const created = await createPool({ seedPool: false });
       poolId = created?.id;
       if (!poolId) {
         setError("Pool konnte nicht erstellt werden.");
+        setSpinState("idle");
         return;
       }
       shouldSeed = true;
     }
-    if ((shouldSeed || !poolSeeded) && intersection.length > 0) {
+    if ((shouldSeed || !poolSeeded) && filteredIntersection.length > 0) {
+      setStatus("Pool wird befuellt...");
       await addIntersectionToPool(poolId);
     }
     setPickResult("");
     setPickImage(null);
-    setIsPicking(true);
+    setSpinState("spinning");
     setStatus("Spiel wird ausgewaehlt...");
-    setError("");
     try {
       const data = await safeFetchJson<{ pick?: { name: string; appId?: number }; error?: string }>(
         `/api/pools/${poolId}/pick`,
@@ -603,19 +614,21 @@ export default function DashboardClient() {
           }
         }
         setPickResult(pickedName);
-        const picked = intersection.find((g) => g.appid === pickedAppId);
+        const picked = wheelItems.find((g) => g.appid === pickedAppId);
         setPickImage(picked ? `https://cdn.akamai.steamstatic.com/steam/apps/${picked.appid}/header.jpg` : null);
         setPickPulse(true);
         setTimeout(() => setPickPulse(false), 1200);
+        setSpinState("result");
       } else {
         setPickResult("Kein Pick verfuegbar.");
+        setSpinState("idle");
       }
       setStatus("");
     } catch (err) {
       setError(getErrorMessage(err));
       setStatus("");
+      setSpinState("idle");
     } finally {
-      setIsPicking(false);
       void refreshRecentAvoid();
     }
   }
@@ -885,19 +898,20 @@ export default function DashboardClient() {
         <div className="mt-3">
           <label className="text-sm text-slate-300">Filter nach Tags:</label>
           <div className="mt-2 flex flex-wrap gap-2">
-            {COMMON_TAG_OPTIONS.map((t) => (
-              <label key={t} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={selectedTags.includes(t)}
-                  onChange={() =>
-                    setSelectedTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]))
-                  }
-                  className="h-4 w-4"
-                />
-                <span className="text-slate-200">{t}</span>
-              </label>
-            ))}
+            <button
+              className="btn-animated rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-sm text-emerald-200 hover:border-emerald-300"
+              onClick={() => toggleTagPreset(["coop", "online co-op", "local co-op"])}
+              type="button"
+            >
+              Co-op
+            </button>
+            <button
+              className="btn-animated rounded-full border border-white/20 px-3 py-1 text-sm text-white hover:border-white/40"
+              onClick={() => toggleTagPreset(["multiplayer"])}
+              type="button"
+            >
+              Zusammen spielen
+            </button>
           </div>
         </div>
 
@@ -932,7 +946,7 @@ export default function DashboardClient() {
             <button
               id="btn-create-pool"
               className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={createPool}
+              onClick={() => void createPool()}
               disabled={!canCreatePool}
             >
               <IconStack className="h-4 w-4" />
@@ -957,7 +971,7 @@ export default function DashboardClient() {
               className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
               value={pickMode}
               onChange={(e) => setPickMode(e.target.value as "pure" | "avoid")}
-              disabled={!canUseSteam || isPicking}
+              disabled={!canUseSteam || isSpinBusy}
             >
               <option value="pure">Zufall (pure)</option>
               <option value="avoid">Avoid repeats</option>
@@ -978,7 +992,7 @@ export default function DashboardClient() {
                   Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev
                 );
               }}
-              disabled={pickMode !== "avoid" || !canUseSteam || isPicking}
+              disabled={pickMode !== "avoid" || !canUseSteam || isSpinBusy}
             />
           </div>
 
@@ -997,12 +1011,15 @@ export default function DashboardClient() {
                   return Math.min(12, Math.max(1, next));
                 });
               }}
-              disabled={!canUseSteam || isPicking}
+              disabled={!canUseSteam || isSpinBusy}
             />
           </div>
         </div>
 
-        <div id="wheel" className="mt-6 flex items-center justify-center">
+        <div
+          id="wheel"
+          className={`mt-6 flex items-center justify-center ${spinState === "preparing" ? "animate-pulse" : ""}`}
+        >
           <AuctionWheel
             ref={wheelRef}
             items={wheelItems.map((g) => ({ appid: g.appid, name: g.name }))}
@@ -1016,13 +1033,13 @@ export default function DashboardClient() {
           />
         </div>
 
-        {isPicking || pickResult ? (
+        {isSpinBusy || pickResult ? (
           <div
             className={`mt-4 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-200 transition ${
               pickPulse ? "animate-reveal-pick animate-pulse-once" : ""
             }`}
           >
-            {isPicking ? (
+            {isSpinBusy ? (
               spinningItem ? (
                 <div className="flex items-center gap-3">
                   <Image
@@ -1030,12 +1047,13 @@ export default function DashboardClient() {
                     alt={spinningItem.name}
                     width={460}
                     height={215}
+                    unoptimized
                     className="h-16 w-28 rounded-md object-cover shadow-md"
                     sizes="(max-width: 768px) 112px, 112px"
                     onError={(e) => {
                       const t = e.currentTarget as HTMLImageElement;
-                      if (!t.src.includes("/apps/0/")) {
-                        t.src = "https://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
+                      if (!t.src.includes("/icons/icon-192.svg")) {
+                        t.src = "/icons/icon-192.svg";
                       }
                     }}
                   />
@@ -1057,12 +1075,13 @@ export default function DashboardClient() {
                     alt={pickResult}
                     width={460}
                     height={215}
+                    unoptimized
                     className="h-16 w-28 rounded-md object-cover shadow-md"
                     sizes="(max-width: 768px) 112px, 112px"
                     onError={(e) => {
                       const t = e.currentTarget as HTMLImageElement;
-                      if (!t.src.includes("/apps/0/")) {
-                        t.src = "https://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
+                      if (!t.src.includes("/icons/icon-192.svg")) {
+                        t.src = "/icons/icon-192.svg";
                       }
                     }}
                   />

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { pickWeighted } from "@/lib/pickUtils";
+import { getCurrentUserId } from "@/lib/session";
 
 type Candidate = {
   id: string;
@@ -10,14 +11,11 @@ type Candidate = {
   weight: number;
 };
 
-import { pickWeighted } from "@/lib/pickUtils";
-
 export async function POST(
   request: NextRequest,
   { params }: { params: { poolId: string } | Promise<{ poolId: string }> }
 ) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("steam_user_id")?.value;
+  const userId = await getCurrentUserId();
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -99,6 +97,9 @@ export async function POST(
       userId,
       poolId,
       gameId: chosen.id,
+      mode: body.mode ?? "pure",
+      avoidCount: body.mode === "avoid" ? Math.max(0, body.avoidCount ?? 0) : null,
+      candidateAppIds: Array.isArray(body.appIds) ? body.appIds : null,
     },
   });
 

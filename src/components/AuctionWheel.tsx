@@ -374,7 +374,7 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, AuctionWheelProps>(
         <div
           style={{
             position: "absolute",
-            top: 8,
+            top: 0,
             left: "50%",
             transform: "translateX(-50%)",
             pointerEvents: "none",
@@ -387,6 +387,7 @@ const AuctionWheel = forwardRef<AuctionWheelHandle, AuctionWheelProps>(
               borderLeft: "10px solid transparent",
               borderRight: "10px solid transparent",
               borderBottom: "14px solid var(--accent)",
+              transform: "rotate(180deg)",
               filter: "drop-shadow(0 4px 6px rgba(0,0,0,0.4))",
             }}
             aria-hidden

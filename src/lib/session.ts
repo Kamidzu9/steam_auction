@@ -66,7 +66,7 @@ export async function revokeSession(sessionId: string | undefined) {
 
 export async function isAuthenticated(): Promise<boolean> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sid = cookieStore.get("sid")?.value;
     const refresh = cookieStore.get("refresh")?.value;
 
@@ -100,6 +100,49 @@ export async function isAuthenticated(): Promise<boolean> {
     return true;
   } catch (e) {
     return false;
+  }
+}
+
+/**
+ * Get the current authenticated user ID from session cookies.
+ * Use this in API routes to get the user ID.
+ */
+export async function getCurrentUserId(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    const sid = cookieStore.get("sid")?.value;
+    const refresh = cookieStore.get("refresh")?.value;
+
+    // Fast path: valid session id
+    const validated = await validateSessionById(sid ?? undefined);
+    if (validated) return validated.user.id;
+
+    // Try refresh flow
+    const refreshValidated = await validateRefreshToken(refresh ?? undefined);
+    if (!refreshValidated) return null;
+
+    const { session, user } = refreshValidated;
+    const { refreshToken, expiresAt } = await rotateRefreshToken(session.id);
+
+    // Set cookies server-side
+    cookieStore.set("sid", session.id, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      expires: new Date(Date.now() + 60 * 60 * 1000),
+    });
+    cookieStore.set("refresh", refreshToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/api/auth",
+      expires: expiresAt,
+    });
+
+    return user.id;
+  } catch {
+    return null;
   }
 }
 

@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUserId } from "@/lib/session";
 
 export default async function PoolsPage() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("steam_user_id")?.value;
+  const userId = await getCurrentUserId();
 
   if (!userId) {
     redirect("/dashboard");
@@ -13,7 +12,11 @@ export default async function PoolsPage() {
 
   const pools = await prisma.auctionPool.findMany({
     where: { ownerId: userId },
-    include: { friend: true, games: true },
+    include: {
+      friend: true,
+      games: true,
+      picks: { include: { game: true }, orderBy: { pickedAt: "desc" }, take: 1 },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -51,6 +54,12 @@ export default async function PoolsPage() {
                 </div>
                 <div className="mt-1 text-xs text-slate-400">
                   Games: {pool.games.length}
+                </div>
+                <div className="mt-1 text-xs text-slate-400">
+                  Erstellt: {new Date(pool.createdAt).toLocaleDateString("de-DE")}
+                </div>
+                <div className="mt-1 text-xs text-slate-400">
+                  Letzter Spin: {pool.picks[0]?.game?.name ?? "Noch keiner"}
                 </div>
               </Link>
             ))}

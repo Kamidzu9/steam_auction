@@ -8,7 +8,7 @@ function clearCookies(response: NextResponse) {
 }
 
 export async function POST() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sid = cookieStore.get("sid")?.value;
   if (sid) await revokeSession(sid);
 
@@ -18,7 +18,7 @@ export async function POST() {
 }
 
 export async function GET(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const sid = cookieStore.get("sid")?.value;
   if (sid) await revokeSession(sid);
 

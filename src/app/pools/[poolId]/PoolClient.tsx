@@ -12,6 +12,7 @@ type PoolGame = {
 };
 
 type WheelItem = { appid: number; name: string };
+type SpinState = "idle" | "preparing" | "spinning" | "result";
 
 type ApiErrorResponse = { error?: string };
 
@@ -40,7 +41,7 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
   const [pickResult, setPickResult] = useState<string>("");
   const [pickImage, setPickImage] = useState<string | null>(null);
   const [pickPulse, setPickPulse] = useState(false);
-  const [isPicking, setIsPicking] = useState(false);
+  const [spinState, setSpinState] = useState<SpinState>("idle");
   const [activeWheelItem, setActiveWheelItem] = useState<WheelItem | null>(null);
   const [recentAvoidAppIds, setRecentAvoidAppIds] = useState<number[]>([]);
 
@@ -52,7 +53,8 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
     return games.filter((game) => !blocked.has(game.appId));
   }, [avoidCount, games, pickMode, recentAvoidAppIds]);
 
-  const canPick = wheelGames.length > 0 && !isPicking;
+  const isSpinBusy = spinState === "preparing" || spinState === "spinning";
+  const canPick = wheelGames.length > 0 && !isSpinBusy;
   const spinningItem =
     activeWheelItem ?? (wheelGames[0] ? { appid: wheelGames[0].appId, name: wheelGames[0].name } : null);
 
@@ -79,16 +81,19 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
   }, [refreshRecentAvoid]);
 
   async function pickGame() {
-    if (isPicking) return;
+    if (isSpinBusy) return;
     if (wheelGames.length === 0) {
       setError("Keine passenden Spiele im Wheel.");
       return;
     }
+    setSpinState("preparing");
+    setStatus("Bereite Spin vor...");
+    setError("");
+    await new Promise((resolve) => setTimeout(resolve, 450));
     setPickResult("");
     setPickImage(null);
-    setIsPicking(true);
+    setSpinState("spinning");
     setStatus("Spiel wird ausgewaehlt...");
-    setError("");
     try {
       const data = await safeFetchJson<{ pick?: { name: string; appId?: number }; error?: string }>(
         `/api/pools/${poolId}/pick`,
@@ -120,19 +125,21 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
           }
         }
         setPickResult(pickedName);
-        const picked = games.find((g) => g.appId === pickedAppId);
+        const picked = wheelGames.find((g) => g.appId === pickedAppId);
         setPickImage(picked ? `https://cdn.akamai.steamstatic.com/steam/apps/${picked.appId}/header.jpg` : null);
         setPickPulse(true);
         setTimeout(() => setPickPulse(false), 1200);
+        setSpinState("result");
       } else {
         setPickResult("Kein Pick verfuegbar.");
+        setSpinState("idle");
       }
       setStatus("");
     } catch (err) {
       setError(getErrorMessage(err));
       setStatus("");
+      setSpinState("idle");
     } finally {
-      setIsPicking(false);
       void refreshRecentAvoid();
     }
   }
@@ -147,7 +154,7 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
               className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
               value={pickMode}
               onChange={(e) => setPickMode(e.target.value as "pure" | "avoid")}
-              disabled={isPicking}
+              disabled={isSpinBusy}
             >
               <option value="pure">Zufall (pure)</option>
               <option value="avoid">Avoid repeats</option>
@@ -168,7 +175,7 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
                   Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev
                 );
               }}
-              disabled={pickMode !== "avoid" || isPicking}
+              disabled={pickMode !== "avoid" || isSpinBusy}
             />
           </div>
 
@@ -187,18 +194,21 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
                   return Math.min(12, Math.max(1, next));
                 });
               }}
-              disabled={isPicking}
+              disabled={isSpinBusy}
             />
           </div>
         </div>
 
-        <div id="wheel" className="mt-6 flex items-center justify-center">
+        <div
+          id="wheel"
+          className={`mt-6 flex items-center justify-center ${spinState === "preparing" ? "animate-pulse" : ""}`}
+        >
           <AuctionWheel
             ref={wheelRef}
             items={wheelGames.map((g) => ({ appid: g.appId, name: g.name }))}
             onCenterClick={() => void pickGame()}
             disabled={!canPick}
-            disabledReason={isPicking ? "Pick laeuft..." : undefined}
+            disabledReason={isSpinBusy ? (spinState === "preparing" ? "Spin wird vorbereitet..." : "Wheel dreht...") : undefined}
             allowDrag={false}
             onActiveItemChange={(item) =>
               setActiveWheelItem(item ? { appid: item.appid, name: item.name } : null)
@@ -209,13 +219,13 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
         {status ? <p className="mt-3 text-sm text-slate-200">{status}</p> : null}
         {error ? <p className="mt-3 text-sm text-rose-200">{error}</p> : null}
 
-        {isPicking || pickResult ? (
+        {isSpinBusy || pickResult ? (
           <div
             className={`mt-4 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-200 transition ${
               pickPulse ? "animate-reveal-pick animate-pulse-once" : ""
             }`}
           >
-            {isPicking ? (
+            {isSpinBusy ? (
               spinningItem ? (
                 <div className="flex items-center gap-3">
                   <Image
@@ -223,12 +233,13 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
                     alt={spinningItem.name}
                     width={460}
                     height={215}
+                    unoptimized
                     className="h-16 w-28 rounded-md object-cover shadow-md"
                     sizes="(max-width: 768px) 112px, 112px"
                     onError={(e) => {
                       const t = e.currentTarget as HTMLImageElement;
-                      if (!t.src.includes("/apps/0/")) {
-                        t.src = "https://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
+                      if (!t.src.includes("/icons/icon-192.svg")) {
+                        t.src = "/icons/icon-192.svg";
                       }
                     }}
                   />
@@ -250,12 +261,13 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
                     alt={pickResult}
                     width={460}
                     height={215}
+                    unoptimized
                     className="h-16 w-28 rounded-md object-cover shadow-md"
                     sizes="(max-width: 768px) 112px, 112px"
                     onError={(e) => {
                       const t = e.currentTarget as HTMLImageElement;
-                      if (!t.src.includes("/apps/0/")) {
-                        t.src = "https://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
+                      if (!t.src.includes("/icons/icon-192.svg")) {
+                        t.src = "/icons/icon-192.svg";
                       }
                     }}
                   />
