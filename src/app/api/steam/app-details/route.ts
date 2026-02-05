@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appIdSchema } from "@/lib/validation";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const appId = searchParams.get("appId");
+  const appIdParam = searchParams.get("appId");
 
-  if (!appId) {
-    return NextResponse.json({ error: "Missing appId" }, { status: 400 });
+  const validation = appIdSchema.safeParse(appIdParam);
+  if (!validation.success) {
+    return NextResponse.json({ error: "Invalid app ID" }, { status: 400 });
   }
+
+  const appId = validation.data;
 
   const url = `https://store.steampowered.com/api/appdetails?appids=${encodeURIComponent(
     appId

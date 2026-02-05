@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+import { getCurrentUserId } from "@/lib/session";
 import { fetchSteam } from "@/lib/steam-api";
 
 export async function GET() {
-  // get user from cookie
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("steam_user_id")?.value;
+  const userId = await getCurrentUserId();
 
   // top picked games overall
   const topPicked = await prisma.pickHistory.groupBy({

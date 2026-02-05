@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
+import { limitSchema } from "@/lib/validation";
 
 export async function GET(
   request: NextRequest,
@@ -14,12 +15,13 @@ export async function GET(
 
   const { poolId } = await Promise.resolve(params);
   if (!poolId) {
-    return NextResponse.json({ error: "Missing poolId" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid pool ID" }, { status: 400 });
   }
 
   const limitParam = request.nextUrl.searchParams.get("limit");
-  const limit = limitParam ? Number(limitParam) : 0;
-  const safeLimit = Number.isFinite(limit) ? Math.min(50, Math.max(0, Math.floor(limit))) : 0;
+  const validation = limitSchema.safeParse(limitParam);
+  const safeLimit = validation.success ? validation.data : 0;
+
   if (safeLimit === 0) {
     return NextResponse.json({ appIds: [] });
   }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { forbiddenWords } from "@/config/forbiddenWords";
 import { getCurrentUserId } from "@/lib/session";
+import { addGameSchema } from "@/lib/validation";
 
 function escapeRegExp(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -24,56 +25,58 @@ export async function POST(
 
   const { poolId } = await Promise.resolve(params);
   if (!poolId) {
-    return NextResponse.json({ error: "Missing poolId" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid pool ID" }, { status: 400 });
   }
+
   const pool = await prisma.auctionPool.findFirst({
     where: { id: poolId, ownerId: userId },
   });
   if (!pool) {
     return NextResponse.json({ error: "Pool not found" }, { status: 404 });
   }
-  const body = (await request.json()) as {
-    appId: number;
-    name: string;
-    storeUrl?: string;
-    tags?: string[];
-    weight?: number;
-  };
 
-  if (!body.appId || !body.name) {
-    return NextResponse.json({ error: "Missing game info" }, { status: 400 });
+  const body = await request.json().catch(() => null);
+  const validation = addGameSchema.safeParse(body);
+  
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: "Invalid input", details: validation.error.issues },
+      { status: 400 }
+    );
   }
 
-  if (forbiddenRegex && forbiddenRegex.test(body.name)) {
-    const match = body.name.match(forbiddenRegex)?.[0] ?? null;
+  const { appId, name, storeUrl, tags, weight } = validation.data;
+
+  if (forbiddenRegex && forbiddenRegex.test(name)) {
+    const match = name.match(forbiddenRegex)?.[0] ?? null;
     return NextResponse.json(
-      { skipped: true, reason: "forbidden_word", word: match, name: body.name },
+      { skipped: true, reason: "forbidden_word", word: match, name },
       { status: 200 }
     );
   }
 
   const game = await prisma.game.upsert({
-    where: { appId: body.appId },
+    where: { appId },
     update: {},
     create: {
-      appId: body.appId,
-      name: body.name,
-      storeUrl: body.storeUrl ?? `https://store.steampowered.com/app/${body.appId}`,
-      tags: body.tags?.join(","),
+      appId,
+      name,
+      storeUrl: storeUrl ?? `https://store.steampowered.com/app/${appId}`,
+      tags: tags?.join(","),
     },
   });
 
   const poolGame = await prisma.poolGame.upsert({
     where: { poolId_gameId: { poolId, gameId: game.id } },
     update: {
-      weight: body.weight ?? 1,
-      tags: body.tags?.join(","),
+      weight: weight ?? 1,
+      tags: tags?.join(","),
     },
     create: {
       poolId,
       gameId: game.id,
-      weight: body.weight ?? 1,
-      tags: body.tags?.join(","),
+      weight: weight ?? 1,
+      tags: tags?.join(","),
     },
   });
 

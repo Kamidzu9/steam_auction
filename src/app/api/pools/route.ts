@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
+import { createPoolSchema } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
   const userId = await getCurrentUserId();
@@ -9,17 +10,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as { friendId: string; name?: string };
-
-  if (!body.friendId) {
-    return NextResponse.json({ error: "Missing friendId" }, { status: 400 });
+  const body = await request.json().catch(() => null);
+  const validation = createPoolSchema.safeParse(body);
+  
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: "Invalid input", details: validation.error.issues },
+      { status: 400 }
+    );
   }
+
+  const { friendId, name } = validation.data;
 
   const pool = await prisma.auctionPool.create({
     data: {
       ownerId: userId,
-      friendId: body.friendId,
-      name: body.name ?? "Auction Pool",
+      friendId,
+      name: name ?? "Auction Pool",
     },
   });
 
