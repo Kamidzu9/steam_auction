@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { pickWeighted } from "@/lib/pickUtils";
 import { getCurrentUserId } from "@/lib/session";
+import { pickGameSchema } from "@/lib/validation";
 
 type Candidate = {
   id: string;
@@ -23,13 +24,20 @@ export async function POST(
 
   const { poolId } = await Promise.resolve(params);
   if (!poolId) {
-    return NextResponse.json({ error: "Missing poolId" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid pool ID" }, { status: 400 });
   }
-  const body = (await request.json().catch(() => ({}))) as {
-    mode?: "pure" | "avoid";
-    avoidCount?: number;
-    appIds?: number[];
-  };
+
+  const bodyRaw = await request.json().catch(() => ({}));
+  const validation = pickGameSchema.safeParse(bodyRaw);
+  
+  if (!validation.success) {
+    return NextResponse.json(
+      { error: "Invalid input" },
+      { status: 400 }
+    );
+  }
+
+  const body = validation.data;
 
   const pool = await prisma.auctionPool.findFirst({
     where: { id: poolId, ownerId: userId },
@@ -99,7 +107,7 @@ export async function POST(
       gameId: chosen.id,
       mode: body.mode ?? "pure",
       avoidCount: body.mode === "avoid" ? Math.max(0, body.avoidCount ?? 0) : null,
-      candidateAppIds: Array.isArray(body.appIds) ? body.appIds : null,
+      candidateAppIds: body.appIds && body.appIds.length > 0 ? body.appIds : undefined,
     },
   });
 

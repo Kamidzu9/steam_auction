@@ -1,21 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveSteamId, fetchSteam } from "@/lib/steam-api";
+import { getCurrentUserId } from "@/lib/session";
+import { steamIdSchema } from "@/lib/validation";
 
 export async function GET(request: NextRequest) {
+  const userId = await getCurrentUserId();
+  
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
-  const steamId = searchParams.get("steamId");
+  const steamIdParam = searchParams.get("steamId");
   const apiKey = process.env.STEAM_API_KEY;
 
-  if (!steamId || !apiKey) {
+  if (!apiKey) {
+    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+  }
+
+  const validation = steamIdSchema.safeParse(steamIdParam);
+  if (!validation.success) {
     return NextResponse.json(
-      { error: "Missing steamId or STEAM_API_KEY" },
+      { error: "Invalid steam ID" },
       { status: 400 }
     );
   }
 
+  const steamId = validation.data;
+
   const resolved = await resolveSteamId(steamId, apiKey);
   if (!resolved.ok) {
-    return NextResponse.json({ error: resolved.error }, { status: 400 });
+    return NextResponse.json({ error: "Invalid Steam ID" }, { status: 400 });
   }
 
   const url = new URL(
@@ -31,7 +46,7 @@ export async function GET(request: NextRequest) {
   }>(url.toString());
   if (!response.ok) {
     return NextResponse.json(
-      { error: "Failed to fetch owned games", details: response.text },
+      { error: "Failed to fetch owned games" },
       { status: 502 }
     );
   }
