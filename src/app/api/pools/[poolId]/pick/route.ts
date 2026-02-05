@@ -32,7 +32,7 @@ export async function POST(
   
   if (!validation.success) {
     return NextResponse.json(
-      { error: "Invalid input", details: validation.error.issues },
+      { error: "Invalid input" },
       { status: 400 }
     );
   }
@@ -107,7 +107,7 @@ export async function POST(
       gameId: chosen.id,
       mode: body.mode ?? "pure",
       avoidCount: body.mode === "avoid" ? Math.max(0, body.avoidCount ?? 0) : null,
-      candidateAppIds: Array.isArray(body.appIds) && body.appIds.length > 0 ? body.appIds : undefined,
+      candidateAppIds: body.appIds && body.appIds.length > 0 ? body.appIds : undefined,
     },
   });
 
