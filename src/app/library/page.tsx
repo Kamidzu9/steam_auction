@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 
 type User = {
@@ -12,15 +11,10 @@ type User = {
   avatarUrl?: string | null;
 };
 
-type Friend = {
-  steamid: string;
-};
-
-type Profile = {
-  steamid: string;
-  personaname: string;
-  avatarfull: string;
-  profileurl?: string;
+type Game = {
+  appid: number;
+  name: string;
+  playtime_forever?: number;
 };
 
 type FetchState = "loading" | "success" | "error" | "unauthorized";
@@ -43,11 +37,22 @@ async function safeFetchJson<T>(input: RequestInfo, init?: RequestInit) {
   return data;
 }
 
-export default function FriendsPage() {
+function formatPlaytime(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 100) {
+    const mins = minutes % 60;
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  }
+  return `${hours}h`;
+}
+
+export default function LibraryPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
   const [fetchState, setFetchState] = useState<FetchState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -69,14 +74,13 @@ export default function FriendsPage() {
     }
   }, [router]);
 
-  const loadFriends = useCallback(async (steamId: string) => {
+  const loadGames = useCallback(async (steamId: string) => {
     try {
-      const data = await safeFetchJson<{ friends: Friend[]; profiles?: Profile[] }>(
-        `/api/steam/friends?steamId=${encodeURIComponent(steamId)}`,
+      const data = await safeFetchJson<{ games: Game[] }>(
+        `/api/steam/owned-games?steamId=${encodeURIComponent(steamId)}`,
         { cache: "no-store" }
       );
-      setFriends(data.friends ?? []);
-      setProfiles(data.profiles ?? []);
+      setGames(data.games ?? []);
       setFetchState("success");
     } catch (err) {
       if (getErrorMessage(err) === "UNAUTHORIZED") {
@@ -94,7 +98,7 @@ export default function FriendsPage() {
       try {
         const userData = await loadUser();
         if (userData?.steamId) {
-          await loadFriends(userData.steamId);
+          await loadGames(userData.steamId);
         }
       } catch (err) {
         setFetchState("error");
@@ -102,9 +106,7 @@ export default function FriendsPage() {
       }
     }
     init();
-  }, [loadUser, loadFriends]);
-
-  const profilesMap = new Map(profiles.map(p => [p.steamid, p]));
+  }, [loadUser, loadGames]);
 
   if (fetchState === "loading") {
     return (
@@ -117,7 +119,7 @@ export default function FriendsPage() {
         <section className="surface rounded-2xl p-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-24 bg-white/5 rounded-2xl animate-pulse"></div>
+              <div key={i} className="h-32 bg-white/5 rounded-2xl animate-pulse"></div>
             ))}
           </div>
         </section>
@@ -129,9 +131,9 @@ export default function FriendsPage() {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <h1 className="font-display text-2xl text-white">Friends</h1>
+          <h1 className="font-display text-2xl text-white">Library</h1>
           <p className="text-muted mt-2 text-sm">
-            You need to be logged in to view your friends.
+            You need to be logged in to view your library.
           </p>
         </section>
       </div>
@@ -142,14 +144,14 @@ export default function FriendsPage() {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <h1 className="font-display text-2xl text-white">Friends</h1>
+          <h1 className="font-display text-2xl text-white">Library</h1>
           <p className="text-muted mt-2 text-sm">
-            Your Steam friends list.
+            Your Steam owned games library.
           </p>
         </section>
         <section className="surface rounded-2xl p-6">
           <div className="text-center py-8">
-            <p className="text-red-400 text-sm mb-4">Error loading friends: {errorMessage}</p>
+            <p className="text-red-400 text-sm mb-4">Error loading games: {errorMessage}</p>
             <button
               onClick={() => window.location.reload()}
               className="btn-animated rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
@@ -165,74 +167,63 @@ export default function FriendsPage() {
   return (
     <div className="space-y-6">
       <section className="surface rounded-2xl p-6">
-        <h1 className="font-display text-2xl text-white">Friends</h1>
+        <h1 className="font-display text-2xl text-white">Library</h1>
         <p className="text-muted mt-2 text-sm">
-          Your Steam friends. {user?.displayName && `Playing as ${user.displayName}.`}
+          Your Steam owned games library. {user?.displayName && `Playing as ${user.displayName}.`}
         </p>
-        {friends.length > 0 && (
+        {games.length > 0 && (
           <p className="text-muted mt-1 text-xs">
-            {friends.length} friend{friends.length !== 1 ? "s" : ""} found
+            {games.length} game{games.length !== 1 ? "s" : ""} found
           </p>
         )}
-        <Link
-          href="/dashboard"
-          className="btn-animated mt-4 inline-flex rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
-        >
-          Create Pool with Friends
-        </Link>
       </section>
 
       <section className="surface rounded-2xl p-6">
-        {friends.length === 0 ? (
+        {games.length === 0 ? (
           <div className="text-center py-8">
             <p className="text-muted text-sm">
-              No friends found. Make sure your Steam friends list is public.
+              No games found in your library. Make sure your Steam profile is public.
             </p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {friends.map((friend) => {
-              const profile = profilesMap.get(friend.steamid);
-              return (
-                <div
-                  key={friend.steamid}
-                  className="card-animated min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4"
-                >
-                  <div className="flex items-center gap-3">
-                    {profile?.avatarfull && (
-                      <div className="flex-shrink-0">
-                        <Image
-                          src={profile.avatarfull}
-                          alt={profile.personaname}
-                          width={48}
-                          height={48}
-                          className="rounded-full"
-                          unoptimized
-                        />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-display text-sm text-white truncate">
-                        {profile?.personaname ?? friend.steamid}
-                      </h3>
-                      <p className="text-xs text-slate-400 truncate">
-                        {friend.steamid}
+            {games.map((game) => (
+              <a
+                key={game.appid}
+                href={`https://store.steampowered.com/app/${game.appid}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="card-animated group min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 text-left hover:border-white/30 transition-all"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <Image
+                      src={`https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/capsule_sm_120.jpg`}
+                      alt={game.name}
+                      width={60}
+                      height={45}
+                      className="rounded object-cover"
+                      unoptimized
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-display text-sm text-white break-words line-clamp-2 group-hover:text-blue-300 transition-colors">
+                      {game.name}
+                    </h3>
+                    {game.playtime_forever !== undefined && game.playtime_forever > 0 && (
+                      <p className="text-xs text-slate-400 mt-1">
+                        Played: {formatPlaytime(game.playtime_forever)}
                       </p>
-                      {profile?.profileurl && (
-                        <a
-                          href={profile.profileurl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                        >
-                          View Profile →
-                        </a>
-                      )}
-                    </div>
+                    )}
+                    {(!game.playtime_forever || game.playtime_forever === 0) && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Not played
+                      </p>
+                    )}
                   </div>
                 </div>
-              );
-            })}
+              </a>
+            ))}
           </div>
         )}
       </section>

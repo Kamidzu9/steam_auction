@@ -35,6 +35,17 @@ function IconStack({ className }: IconProps) {
   );
 }
 
+function IconLibrary({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+      <path d="M9 7h6" />
+      <path d="M9 11h6" />
+    </svg>
+  );
+}
+
 function IconUsers({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
@@ -59,6 +70,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Home", icon: IconHome },
   { href: "/dashboard", label: "Dashboard", icon: IconGrid },
   { href: "/pools", label: "Pools", icon: IconStack },
+  { href: "/library", label: "Library", icon: IconLibrary },
   { href: "/friends", label: "Friends", icon: IconUsers },
   { href: "/profile", label: "Profile", icon: IconUser },
 ];
