@@ -10,6 +10,8 @@ on:
   push:
     tags:
       - "v*.*.*-*" # matches pre-release tags like v0.2.0-beta.1
+    branches:
+      - main
 
 permissions:
   contents: write

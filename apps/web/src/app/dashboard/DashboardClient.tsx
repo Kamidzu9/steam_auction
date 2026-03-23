@@ -4,7 +4,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import AuctionWheel, { AuctionWheelHandle } from "../../components/AuctionWheel";
+import AuctionWheel, {
+  AuctionWheelHandle,
+} from "../../components/AuctionWheel";
 import { useApi } from "../../lib/ApiProvider";
 import { ApiError } from "@steam-auction/api-client";
 
@@ -47,7 +49,14 @@ type IconProps = { className?: string };
 
 function IconLink({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      aria-hidden
+    >
       <path d="M10 13a4 4 0 0 1 0-6l2-2a4 4 0 1 1 6 6l-1.5 1.5" />
       <path d="M14 11a4 4 0 0 1 0 6l-2 2a4 4 0 1 1-6-6L7.5 11" />
     </svg>
@@ -56,7 +65,14 @@ function IconLink({ className }: IconProps) {
 
 function IconRefresh({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      aria-hidden
+    >
       <path d="M20 6v6h-6" />
       <path d="M4 18a8 8 0 0 0 13.7-5.2" />
     </svg>
@@ -65,7 +81,14 @@ function IconRefresh({ className }: IconProps) {
 
 function IconUsers({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      aria-hidden
+    >
       <circle cx="8" cy="8" r="3.2" />
       <circle cx="17" cy="9.5" r="2.6" />
       <path d="M3 19c0-3 2.6-5.4 5.8-5.4S14.6 16 14.6 19" />
@@ -76,7 +99,14 @@ function IconUsers({ className }: IconProps) {
 
 function IconIntersect({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      aria-hidden
+    >
       <circle cx="9" cy="12" r="5" />
       <circle cx="15" cy="12" r="5" />
     </svg>
@@ -85,7 +115,14 @@ function IconIntersect({ className }: IconProps) {
 
 function IconStack({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      aria-hidden
+    >
       <path d="M4 8l8-4 8 4-8 4-8-4z" />
       <path d="M4 12l8 4 8-4" />
       <path d="M4 16l8 4 8-4" />
@@ -95,7 +132,14 @@ function IconStack({ className }: IconProps) {
 
 function IconPlus({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      aria-hidden
+    >
       <path d="M12 5v14" />
       <path d="M5 12h14" />
     </svg>
@@ -104,7 +148,14 @@ function IconPlus({ className }: IconProps) {
 
 function IconArrowRight({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      aria-hidden
+    >
       <path d="M5 12h14" />
       <path d="M13 6l6 6-6 6" />
     </svg>
@@ -138,7 +189,9 @@ export default function DashboardClient() {
   const [poolSeeded, setPoolSeeded] = useState(false);
   const [spinState, setSpinState] = useState<SpinState>("idle");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [activeWheelItem, setActiveWheelItem] = useState<WheelItem | null>(null);
+  const [activeWheelItem, setActiveWheelItem] = useState<WheelItem | null>(
+    null,
+  );
   const [recentAvoidAppIds, setRecentAvoidAppIds] = useState<number[]>([]);
   const autoSyncRef = useRef(false);
   const wheelRef = useRef<AuctionWheelHandle | null>(null);
@@ -160,7 +213,11 @@ export default function DashboardClient() {
   }, [intersection, selectedTags, gameTagsMap]);
 
   const wheelItems = useMemo(() => {
-    if (pickMode !== "avoid" || avoidCount <= 0 || recentAvoidAppIds.length === 0) {
+    if (
+      pickMode !== "avoid" ||
+      avoidCount <= 0 ||
+      recentAvoidAppIds.length === 0
+    ) {
       return filteredIntersection;
     }
     const blocked = new Set(recentAvoidAppIds);
@@ -175,10 +232,12 @@ export default function DashboardClient() {
   const hasWheelItems = wheelItems.length > 0;
   const canLoadShared = canUseSteam && hasFriendSelection && hasMyGames;
   const canCreatePool = canUseSteam && hasFriendSelection;
-  const canAddToPool = canUseSteam && Boolean(pool?.id) && filteredIntersection.length > 0;
+  const canAddToPool =
+    canUseSteam && Boolean(pool?.id) && filteredIntersection.length > 0;
   const hasPoolOrFriend = Boolean(pool?.id) || hasFriendSelection;
   const isSpinBusy = spinState === "preparing" || spinState === "spinning";
-  const canPick = canUseSteam && hasWheelItems && hasPoolOrFriend && !isSpinBusy;
+  const canPick =
+    canUseSteam && hasWheelItems && hasPoolOrFriend && !isSpinBusy;
   const pickDisabledReason = isSpinBusy
     ? spinState === "preparing"
       ? "Spin wird vorbereitet..."
@@ -221,7 +280,9 @@ export default function DashboardClient() {
     try {
       const data = await client.getRecentPicks(pool.id, avoidCount);
       const appIds = Array.isArray(data.appIds)
-        ? data.appIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+        ? data.appIds
+            .map((id) => Number(id))
+            .filter((id) => Number.isFinite(id))
         : [];
       setRecentAvoidAppIds(appIds);
     } catch {
@@ -272,7 +333,13 @@ export default function DashboardClient() {
       if (games.length === 0) {
         setError("Keine Spiele erhalten. Pruefe deine Steam-Privatsphaere.");
       }
-      setMyGames(games.map((g) => ({ appid: g.appid, name: g.name, playtime_forever: g.playtime_forever })));
+      setMyGames(
+        games.map((g) => ({
+          appid: g.appid,
+          name: g.name,
+          playtime_forever: g.playtime_forever,
+        })),
+      );
       setStatus("");
     } catch (err) {
       setError(getErrorMessage(err));
@@ -298,7 +365,7 @@ export default function DashboardClient() {
       setStatus(
         data.friends?.length
           ? "Freundesliste geladen und gespeichert."
-          : "Keine oeffentliche Freundesliste gefunden."
+          : "Keine oeffentliche Freundesliste gefunden.",
       );
     } catch (err) {
       setError(getErrorMessage(err));
@@ -359,7 +426,11 @@ export default function DashboardClient() {
         let games: GameItem[] = [];
         try {
           const data = await client.getOwnedGames(friend.steamId);
-          games = (data.games ?? []).map((g) => ({ appid: g.appid, name: g.name, playtime_forever: g.playtime_forever }));
+          games = (data.games ?? []).map((g) => ({
+            appid: g.appid,
+            name: g.name,
+            playtime_forever: g.playtime_forever,
+          }));
         } catch (err) {
           setError(getErrorMessage(err));
           continue;
@@ -372,17 +443,25 @@ export default function DashboardClient() {
         if (sharedAppIds === null) sharedAppIds = appSet;
         else {
           sharedAppIds = new Set(
-            Array.from(sharedAppIds as Set<number>).filter((id) => appSet.has(id))
+            Array.from(sharedAppIds as Set<number>).filter((id) =>
+              appSet.has(id),
+            ),
           );
         }
       }
 
       const mySet = new Set(myGames.map((g) => g.appid));
-      const finalIds = sharedAppIds ? [...sharedAppIds].filter((id) => mySet.has(id)) : [];
+      const finalIds = sharedAppIds
+        ? [...sharedAppIds].filter((id) => mySet.has(id))
+        : [];
       const finalGames = myGames.filter((g) => finalIds.includes(g.appid));
       setFriendGames(finalGames);
       void prefetchTagsForGames(finalGames);
-      setStatus(finalGames.length ? "Gemeinsame Spiele geladen." : "Keine gemeinsamen Spiele gefunden.");
+      setStatus(
+        finalGames.length
+          ? "Gemeinsame Spiele geladen."
+          : "Keine gemeinsamen Spiele gefunden.",
+      );
     } catch (err) {
       setError(getErrorMessage(err));
     }
@@ -393,8 +472,10 @@ export default function DashboardClient() {
     try {
       const data = await client.getAppDetails(appid);
       const tags: string[] = [];
-      if (Array.isArray(data.categories)) tags.push(...data.categories.map((t) => t.toLowerCase()));
-      if (Array.isArray(data.genres)) tags.push(...data.genres.map((t) => t.toLowerCase()));
+      if (Array.isArray(data.categories))
+        tags.push(...data.categories.map((t) => t.toLowerCase()));
+      if (Array.isArray(data.genres))
+        tags.push(...data.genres.map((t) => t.toLowerCase()));
       const dedup = Array.from(new Set(tags));
       setGameTagsMap((s) => ({ ...s, [appid]: dedup }));
       return dedup;
@@ -420,7 +501,10 @@ export default function DashboardClient() {
     const firstFriend = selectedFriendIds[0];
     const shouldSeed = options?.seedPool ?? true;
     try {
-      const data = await client.createPool({ friendId: firstFriend!, name: "Auction Pool" });
+      const data = await client.createPool({
+        friendId: firstFriend!,
+        name: "Auction Pool",
+      });
       setPool(data.pool);
       if (shouldSeed && filteredIntersection.length > 0) {
         await addIntersectionToPool(data.pool.id);
@@ -472,13 +556,23 @@ export default function DashboardClient() {
 
     setPoolSeeded(true);
     if (failed > 0) {
-      setError(`Fehler beim Hinzufuegen: ${failed} Spiele konnten nicht gespeichert werden.`);
+      setError(
+        `Fehler beim Hinzufuegen: ${failed} Spiele konnten nicht gespeichert werden.`,
+      );
     }
-    setStatus(skipped ? `Pool aktualisiert. ${skipped} Titel uebersprungen.` : "Pool aktualisiert.");
+    setStatus(
+      skipped
+        ? `Pool aktualisiert. ${skipped} Titel uebersprungen.`
+        : "Pool aktualisiert.",
+    );
     if (skippedNames.length > 0) {
-      setError(`Uebersprungen: ${skippedNames.slice(0, 5).join(", ")}${
-        skippedNames.length > 5 ? ` (+${skippedNames.length - 5} weitere)` : ""
-      }`);
+      setError(
+        `Uebersprungen: ${skippedNames.slice(0, 5).join(", ")}${
+          skippedNames.length > 5
+            ? ` (+${skippedNames.length - 5} weitere)`
+            : ""
+        }`,
+      );
     }
   }
 
@@ -538,7 +632,11 @@ export default function DashboardClient() {
         }
         setPickResult(pickedName);
         const picked = wheelItems.find((g) => g.appid === pickedAppId);
-        setPickImage(picked ? `https://cdn.akamai.steamstatic.com/steam/apps/${picked.appid}/header.jpg` : null);
+        setPickImage(
+          picked
+            ? `https://cdn.akamai.steamstatic.com/steam/apps/${picked.appid}/header.jpg`
+            : null,
+        );
         setPickPulse(true);
         setTimeout(() => setPickPulse(false), 1200);
         setSpinState("result");
@@ -577,7 +675,7 @@ export default function DashboardClient() {
   useEffect(() => {
     if (!pool?.id) return;
     setPoolSeeded(false);
-  }, [selectedFriendIds, intersection.length]);
+  }, [selectedFriendIds, intersection.length, pool?.id]);
 
   useEffect(() => {
     void refreshRecentAvoid();
@@ -602,7 +700,9 @@ export default function DashboardClient() {
               </div>
             )}
             <div>
-              <h2 className="font-display text-lg text-white">Status & Login</h2>
+              <h2 className="font-display text-lg text-white">
+                Status & Login
+              </h2>
               <p className="text-muted mt-1 text-sm">
                 {!authReady
                   ? "Session wird geladen..."
@@ -645,12 +745,19 @@ export default function DashboardClient() {
 
         {loginFailed ? (
           <div className="mt-4 rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
-            Steam Login fehlgeschlagen. Bitte pruefe deine Steam-Session oder die STEAM_REALM URL.
+            Steam Login fehlgeschlagen. Bitte pruefe deine Steam-Session oder
+            die STEAM_REALM URL.
           </div>
         ) : null}
 
-        {status ? <p className="mt-3 text-sm text-slate-200 animate-slide-up">{status}</p> : null}
-        {error ? <p className="mt-3 text-sm text-rose-200 animate-slide-up">{error}</p> : null}
+        {status ? (
+          <p className="mt-3 text-sm text-slate-200 animate-slide-up">
+            {status}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="mt-3 text-sm text-rose-200 animate-slide-up">{error}</p>
+        ) : null}
         <div className="mt-4 grid gap-2 text-sm text-slate-400 md:grid-cols-3 animate-slide-up">
           <span>Meine Spiele: {myGames.length}</span>
           <span>Freund-Spiele: {friendGames.length}</span>
@@ -734,7 +841,8 @@ export default function DashboardClient() {
             >
               {friends.length === 0 ? (
                 <div className="text-sm text-muted p-2">
-                  Noch keine gespeicherten Freunde. Lade Steam-Freunde oder fuege eine ID hinzu.
+                  Noch keine gespeicherten Freunde. Lade Steam-Freunde oder
+                  fuege eine ID hinzu.
                 </div>
               ) : (
                 friends
@@ -759,7 +867,7 @@ export default function DashboardClient() {
                             setSelectedFriendIds((prev) =>
                               prev.includes(friend.id)
                                 ? prev.filter((id) => id !== friend.id)
-                                : [...prev, friend.id]
+                                : [...prev, friend.id],
                             )
                           }
                           className="h-4 w-4"
@@ -817,13 +925,17 @@ export default function DashboardClient() {
 
       <section className="surface rounded-2xl p-6 card-animated animate-pop">
         <h2 className="font-display text-lg text-white">Gemeinsame Spiele</h2>
-        <p className="text-muted mt-2 text-sm">Gefundene Intersection: {intersection.length}</p>
+        <p className="text-muted mt-2 text-sm">
+          Gefundene Intersection: {intersection.length}
+        </p>
         <div className="mt-3">
           <label className="text-sm text-slate-300">Filter nach Tags:</label>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
               className="btn-animated rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-sm text-emerald-200 hover:border-emerald-300"
-              onClick={() => toggleTagPreset(["coop", "online co-op", "local co-op"])}
+              onClick={() =>
+                toggleTagPreset(["coop", "online co-op", "local co-op"])
+              }
               type="button"
             >
               Co-op
@@ -846,13 +958,16 @@ export default function DashboardClient() {
                 className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200"
               >
                 <span className="min-w-0 flex-1 truncate">{game.name}</span>
-                <span className="ml-3 flex-shrink-0 text-xs text-slate-400">#{game.appid}</span>
+                <span className="ml-3 flex-shrink-0 text-xs text-slate-400">
+                  #{game.appid}
+                </span>
               </div>
             ))}
           </div>
         ) : (
           <p className="text-muted mt-4 text-sm">
-            Keine passenden Spiele gefunden. Pruefe deine Auswahl oder lade die Spiele neu.
+            Keine passenden Spiele gefunden. Pruefe deine Auswahl oder lade die
+            Spiele neu.
           </p>
         )}
       </section>
@@ -862,7 +977,8 @@ export default function DashboardClient() {
           <div>
             <h2 className="font-display text-lg text-white">Pool & Pick</h2>
             <p className="text-muted mt-2 text-sm">
-              Erstelle einen Pool, speichere die gemeinsamen Spiele und lasse die Auktion entscheiden.
+              Erstelle einen Pool, speichere die gemeinsamen Spiele und lasse
+              die Auktion entscheiden.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -912,7 +1028,7 @@ export default function DashboardClient() {
               onChange={(e) => {
                 const next = Number(e.target.value);
                 setAvoidCount((prev) =>
-                  Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev
+                  Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev,
                 );
               }}
               disabled={pickMode !== "avoid" || !canUseSteam || isSpinBusy}
@@ -951,7 +1067,9 @@ export default function DashboardClient() {
             disabledReason={pickDisabledReason}
             allowDrag={false}
             onActiveItemChange={(item) =>
-              setActiveWheelItem(item ? { appid: item.appid, name: item.name } : null)
+              setActiveWheelItem(
+                item ? { appid: item.appid, name: item.name } : null,
+              )
             }
           />
         </div>
@@ -981,7 +1099,9 @@ export default function DashboardClient() {
                     }}
                   />
                   <div className="min-w-0">
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      Ergebnis
+                    </div>
                     <div className="text-lg font-semibold leading-tight break-words">
                       {spinningItem.name}
                     </div>
@@ -1010,8 +1130,12 @@ export default function DashboardClient() {
                   />
                 ) : null}
                 <div className="min-w-0">
-                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
-                  <div className="text-lg font-semibold leading-tight break-words">{pickResult}</div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                    Ergebnis
+                  </div>
+                  <div className="text-lg font-semibold leading-tight break-words">
+                    {pickResult}
+                  </div>
                 </div>
               </div>
             )}
@@ -1033,12 +1157,15 @@ export default function DashboardClient() {
           </div>
         ) : null}
         <p className="text-muted mt-3 text-xs">
-          Avoid schliesst die letzten Picks aus. Die Spin-Dauer steuert die Animation.
+          Avoid schliesst die letzten Picks aus. Die Spin-Dauer steuert die
+          Animation.
         </p>
       </section>
 
       <section className="surface rounded-2xl p-6">
-        <h2 className="font-display text-lg text-white">So funktioniert&apos;s</h2>
+        <h2 className="font-display text-lg text-white">
+          So funktioniert&apos;s
+        </h2>
         <ol className="mt-3 grid gap-3 text-sm text-slate-300 md:grid-cols-2">
           <li>1. Steam verbinden und Spiele laden.</li>
           <li>2. Freunde waehlen und gemeinsame Spiele berechnen.</li>
