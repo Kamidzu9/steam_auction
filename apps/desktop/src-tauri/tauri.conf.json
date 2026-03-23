@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "identifier": "com.steam-auction.app",
   "build": {
-    "beforeDevCommand": "npm run dev --workspace=apps/web",
-    "beforeBuildCommand": "npm run build --workspace=apps/web",
+    "beforeDevCommand": "npm --prefix ../web run dev",
+    "beforeBuildCommand": "npm --prefix ../web run build",
     "devUrl": "http://localhost:3000",
     "frontendDist": "../apps/web/.next/standalone"
   },
