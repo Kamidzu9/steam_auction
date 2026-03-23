@@ -13,7 +13,7 @@ const envSchema = z.object({
   COOKIE_SECURE: z
     .string()
     .transform((v) => v === "true")
-    .default("false"),
+    .default(false),
 });
 
 function loadConfig() {
