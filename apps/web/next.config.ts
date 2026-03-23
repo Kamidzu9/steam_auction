@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Build a standalone output so Tauri can find the `.next/standalone` folder
-  output: "standalone",
+  // Static export so Tauri can serve the `out/` directory without a Node server
+  output: "export",
   reactCompiler: true,
   images: {
     remotePatterns: [

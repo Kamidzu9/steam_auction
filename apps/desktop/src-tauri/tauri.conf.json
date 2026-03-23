@@ -7,7 +7,7 @@
     "beforeDevCommand": "npm --prefix ../web run dev",
     "beforeBuildCommand": "npm --prefix ../web run build",
     "devUrl": "http://localhost:3000",
-    "frontendDist": "../../web/.next/standalone"
+    "frontendDist": "../../web/out"
   },
   "app": {
     "windows": [

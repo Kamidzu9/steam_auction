@@ -1,5 +1,8 @@
 "use client";
 
+// Force static generation; data is fetched client-side at runtime
+export const dynamic = "force-static";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -32,23 +35,36 @@ export default function PoolPage() {
   const { client, accessToken, isLoading } = useApi();
   const [pool, setPool] = useState<PoolDetail | null>(null);
   const [games, setGames] = useState<PoolGame[]>([]);
-  const [fetchState, setFetchState] = useState<"loading" | "done" | "notfound" | "error">("loading");
+  const [fetchState, setFetchState] = useState<
+    "loading" | "done" | "notfound" | "error"
+  >("loading");
 
   useEffect(() => {
     if (isLoading || !poolId) return;
-    if (!accessToken) { setFetchState("done"); return; }
+    if (!accessToken) {
+      setFetchState("done");
+      return;
+    }
 
-    client.getPools()
+    client
+      .getPools()
       .then((r) => {
-        const found = r.pools.find((p) => p.id === poolId) as PoolDetail | undefined;
-        if (!found) { setFetchState("notfound"); return; }
+        const found = r.pools.find((p) => p.id === poolId) as
+          | PoolDetail
+          | undefined;
+        if (!found) {
+          setFetchState("notfound");
+          return;
+        }
         setPool(found);
-        setGames((found.games ?? []).map((pg) => ({
-          appId: pg.game?.appId ?? 0,
-          name: pg.game?.name ?? "Unknown",
-          storeUrl: pg.game?.storeUrl,
-          weight: pg.weight,
-        })));
+        setGames(
+          (found.games ?? []).map((pg) => ({
+            appId: pg.game?.appId ?? 0,
+            name: pg.game?.name ?? "Unknown",
+            storeUrl: pg.game?.storeUrl,
+            weight: pg.weight,
+          })),
+        );
         setFetchState("done");
       })
       .catch(() => setFetchState("error"));
@@ -65,12 +81,22 @@ export default function PoolPage() {
     );
   }
 
-  if (fetchState === "notfound" || (!isLoading && !pool && fetchState === "done")) {
+  if (
+    fetchState === "notfound" ||
+    (!isLoading && !pool && fetchState === "done")
+  ) {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <Link className="text-sm text-slate-400 hover:text-white" href="/pools">Back to Pools</Link>
-          <h1 className="font-display mt-3 text-2xl text-white">Pool not found</h1>
+          <Link
+            className="text-sm text-slate-400 hover:text-white"
+            href="/pools"
+          >
+            Back to Pools
+          </Link>
+          <h1 className="font-display mt-3 text-2xl text-white">
+            Pool not found
+          </h1>
         </section>
       </div>
     );
@@ -82,13 +108,19 @@ export default function PoolPage() {
         <Link className="text-sm text-slate-400 hover:text-white" href="/pools">
           Back to Pools
         </Link>
-        <h1 className="font-display mt-3 text-2xl text-white break-words">{pool?.name}</h1>
+        <h1 className="font-display mt-3 text-2xl text-white break-words">
+          {pool?.name}
+        </h1>
         <p className="text-muted mt-2 text-sm break-words">
-          Friend: {pool?.friend?.displayName ?? pool?.friend?.steamId ?? "Unknown"}
+          Friend:{" "}
+          {pool?.friend?.displayName ?? pool?.friend?.steamId ?? "Unknown"}
         </p>
         <p className="text-muted mt-1 text-sm">Games: {games.length}</p>
         <p className="text-muted mt-1 text-sm">
-          Erstellt: {pool?.createdAt ? new Date(pool.createdAt).toLocaleDateString("de-DE") : ""}
+          Erstellt:{" "}
+          {pool?.createdAt
+            ? new Date(pool.createdAt).toLocaleDateString("de-DE")
+            : ""}
         </p>
       </section>
 
@@ -108,7 +140,10 @@ export default function PoolPage() {
           {games.map((game) => (
             <a
               key={game.appId}
-              href={game.storeUrl ?? `https://store.steampowered.com/app/${game.appId}`}
+              href={
+                game.storeUrl ??
+                `https://store.steampowered.com/app/${game.appId}`
+              }
               className="min-w-0 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200 hover:border-white/30 break-words"
               target="_blank"
               rel="noreferrer"
@@ -124,11 +159,17 @@ export default function PoolPage() {
           <h2 className="font-display text-lg text-white">Letzte Picks</h2>
           <div className="mt-3 grid gap-2 text-sm text-slate-300 md:grid-cols-2">
             {pool.picks.map((pick) => (
-              <div key={pick.id} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
+              <div
+                key={pick.id}
+                className="rounded-xl border border-white/10 bg-black/30 px-3 py-2"
+              >
                 <div className="text-white">{pick.game?.name ?? "Unknown"}</div>
                 <div className="text-xs text-slate-400">
-                  {new Date(pick.pickedAt).toLocaleString("de-DE")} • {pick.mode}
-                  {pick.mode === "avoid" && pick.avoidCount ? ` (avoid ${pick.avoidCount})` : ""}
+                  {new Date(pick.pickedAt).toLocaleString("de-DE")} •{" "}
+                  {pick.mode}
+                  {pick.mode === "avoid" && pick.avoidCount
+                    ? ` (avoid ${pick.avoidCount})`
+                    : ""}
                 </div>
               </div>
             ))}
