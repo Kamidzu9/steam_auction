@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tauri dev",
+    "tauri": "tauri",
     "build": "tauri build"
   },
   "devDependencies": {
