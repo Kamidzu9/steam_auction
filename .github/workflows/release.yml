@@ -113,7 +113,6 @@ jobs:
       - name: Build web
         run: npm run build --workspace=apps/web
         env:
-          CSS_TRANSFORMER_WASM: "1"
           NEXT_PUBLIC_API_URL: "http://localhost:3001"
 
       - name: Upload web artifact
@@ -172,16 +171,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install lightningcss native binary (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: npm install --no-save lightningcss-linux-x64-gnu
+
+      - name: Install lightningcss native binary (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: npm install --no-save lightningcss-win32-x64-msvc
+
+      - name: Install lightningcss native binary (macOS arm64)
+        if: matrix.platform == 'macos-latest'
+        run: npm install --no-save lightningcss-darwin-arm64
+
       - name: Build web (required by Tauri)
         run: npm run build --workspace=apps/web
         env:
-          CSS_TRANSFORMER_WASM: "1"
           NEXT_PUBLIC_API_URL: "http://localhost:3001"
 
       - name: Build desktop
         uses: tauri-apps/tauri-action@v0
         env:
-          CSS_TRANSFORMER_WASM: "1"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: ./apps/desktop
