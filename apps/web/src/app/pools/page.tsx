@@ -125,18 +125,25 @@ function PoolsPageContent() {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <Link className="text-sm text-slate-400 hover:text-white" href="/pools">
+          <Link
+            className="text-sm text-slate-400 hover:text-white"
+            href="/pools"
+          >
             Back to Pools
           </Link>
           <h1 className="font-display mt-3 text-2xl text-white break-words">
             {pool?.name}
           </h1>
           <p className="text-muted mt-2 text-sm break-words">
-            Friend: {pool?.friend?.displayName ?? pool?.friend?.steamId ?? "Unknown"}
+            Friend:{" "}
+            {pool?.friend?.displayName ?? pool?.friend?.steamId ?? "Unknown"}
           </p>
           <p className="text-muted mt-1 text-sm">Games: {games.length}</p>
           <p className="text-muted mt-1 text-sm">
-            Erstellt: {pool?.createdAt ? new Date(pool.createdAt).toLocaleDateString("de-DE") : ""}
+            Erstellt:{" "}
+            {pool?.createdAt
+              ? new Date(pool.createdAt).toLocaleDateString("de-DE")
+              : ""}
           </p>
         </section>
 
@@ -179,9 +186,12 @@ function PoolsPageContent() {
                   key={pick.id}
                   className="rounded-xl border border-white/10 bg-black/30 px-3 py-2"
                 >
-                  <div className="text-white">{pick.game?.name ?? "Unknown"}</div>
+                  <div className="text-white">
+                    {pick.game?.name ?? "Unknown"}
+                  </div>
                   <div className="text-xs text-slate-400">
-                    {new Date(pick.pickedAt).toLocaleString("de-DE")} • {pick.mode}
+                    {new Date(pick.pickedAt).toLocaleString("de-DE")} •{" "}
+                    {pick.mode}
                     {pick.mode === "avoid" && pick.avoidCount
                       ? ` (avoid ${pick.avoidCount})`
                       : ""}
@@ -244,7 +254,8 @@ function PoolsPageContent() {
         <h1 className="font-display text-2xl text-white">Deine Pools</h1>
         {pools.length === 0 ? (
           <p className="text-muted mt-2 text-sm">
-            Noch keine Pools vorhanden. Erstelle deinen ersten Pool im Dashboard.
+            Noch keine Pools vorhanden. Erstelle deinen ersten Pool im
+            Dashboard.
           </p>
         ) : (
           <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -258,7 +269,8 @@ function PoolsPageContent() {
                   {p.name}
                 </div>
                 <div className="mt-2 text-xs text-slate-400 truncate">
-                  Friend: {p.friend?.displayName ?? p.friend?.steamId ?? "Unknown"}
+                  Friend:{" "}
+                  {p.friend?.displayName ?? p.friend?.steamId ?? "Unknown"}
                 </div>
                 <div className="mt-1 text-xs text-slate-500">
                   Games: {p.games?.length ?? 0}

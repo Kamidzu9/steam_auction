@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import AuctionWheel, { AuctionWheelHandle } from "../../components/AuctionWheel";
+import AuctionWheel, {
+  AuctionWheelHandle,
+} from "../../components/AuctionWheel";
 
 type PoolGame = {
   appId: number;
@@ -24,13 +26,20 @@ async function safeFetchJson<T>(input: RequestInfo, init?: RequestInit) {
   const res = await fetch(input, init);
   const data = (await res.json().catch(() => ({}))) as T & ApiErrorResponse;
   if (!res.ok) {
-    const message = typeof data.error === "string" ? data.error : "Request failed";
+    const message =
+      typeof data.error === "string" ? data.error : "Request failed";
     throw new Error(message);
   }
   return data as T & ApiErrorResponse;
 }
 
-export default function PoolClient({ poolId, games }: { poolId: string; games: PoolGame[] }) {
+export default function PoolClient({
+  poolId,
+  games,
+}: {
+  poolId: string;
+  games: PoolGame[];
+}) {
   const wheelRef = useRef<AuctionWheelHandle | null>(null);
   const [pickMode, setPickMode] = useState<"pure" | "avoid">("pure");
   const [avoidCount, setAvoidCount] = useState(3);
@@ -41,11 +50,17 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
   const [pickImage, setPickImage] = useState<string | null>(null);
   const [pickPulse, setPickPulse] = useState(false);
   const [spinState, setSpinState] = useState<SpinState>("idle");
-  const [activeWheelItem, setActiveWheelItem] = useState<WheelItem | null>(null);
+  const [activeWheelItem, setActiveWheelItem] = useState<WheelItem | null>(
+    null,
+  );
   const [recentAvoidAppIds, setRecentAvoidAppIds] = useState<number[]>([]);
 
   const wheelGames = useMemo(() => {
-    if (pickMode !== "avoid" || avoidCount <= 0 || recentAvoidAppIds.length === 0) {
+    if (
+      pickMode !== "avoid" ||
+      avoidCount <= 0 ||
+      recentAvoidAppIds.length === 0
+    ) {
       return games;
     }
     const blocked = new Set(recentAvoidAppIds);
@@ -55,7 +70,10 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
   const isSpinBusy = spinState === "preparing" || spinState === "spinning";
   const canPick = wheelGames.length > 0 && !isSpinBusy;
   const spinningItem =
-    activeWheelItem ?? (wheelGames[0] ? { appid: wheelGames[0].appId, name: wheelGames[0].name } : null);
+    activeWheelItem ??
+    (wheelGames[0]
+      ? { appid: wheelGames[0].appId, name: wheelGames[0].name }
+      : null);
 
   const refreshRecentAvoid = useCallback(async () => {
     if (pickMode !== "avoid" || avoidCount <= 0) {
@@ -67,7 +85,9 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
         `/api/pools/${poolId}/recent-picks?limit=${avoidCount}`,
       );
       const appIds = Array.isArray(data.appIds)
-        ? data.appIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+        ? data.appIds
+            .map((id) => Number(id))
+            .filter((id) => Number.isFinite(id))
         : [];
       setRecentAvoidAppIds(appIds);
     } catch {
@@ -94,18 +114,18 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
     setSpinState("spinning");
     setStatus("Spiel wird ausgewaehlt...");
     try {
-      const data = await safeFetchJson<{ pick?: { name: string; appId?: number }; error?: string }>(
-        `/api/pools/${poolId}/pick`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mode: pickMode,
-            avoidCount,
-            appIds: wheelGames.map((game) => game.appId),
-          }),
-        },
-      );
+      const data = await safeFetchJson<{
+        pick?: { name: string; appId?: number };
+        error?: string;
+      }>(`/api/pools/${poolId}/pick`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: pickMode,
+          avoidCount,
+          appIds: wheelGames.map((game) => game.appId),
+        }),
+      });
       if (data.error) {
         setError(data.error);
         setStatus("");
@@ -125,7 +145,11 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
         }
         setPickResult(pickedName);
         const picked = wheelGames.find((g) => g.appId === pickedAppId);
-        setPickImage(picked ? `https://cdn.akamai.steamstatic.com/steam/apps/${picked.appId}/header.jpg` : null);
+        setPickImage(
+          picked
+            ? `https://cdn.akamai.steamstatic.com/steam/apps/${picked.appId}/header.jpg`
+            : null,
+        );
         setPickPulse(true);
         setTimeout(() => setPickPulse(false), 1200);
         setSpinState("result");
@@ -216,12 +240,16 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
             }
             allowDrag={false}
             onActiveItemChange={(item) =>
-              setActiveWheelItem(item ? { appid: item.appid, name: item.name } : null)
+              setActiveWheelItem(
+                item ? { appid: item.appid, name: item.name } : null,
+              )
             }
           />
         </div>
 
-        {status ? <p className="mt-3 text-sm text-slate-200">{status}</p> : null}
+        {status ? (
+          <p className="mt-3 text-sm text-slate-200">{status}</p>
+        ) : null}
         {error ? <p className="mt-3 text-sm text-rose-200">{error}</p> : null}
 
         {isSpinBusy || pickResult ? (
@@ -249,7 +277,9 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
                     }}
                   />
                   <div className="min-w-0">
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      Ergebnis
+                    </div>
                     <div className="text-lg font-semibold leading-tight break-words">
                       {spinningItem.name}
                     </div>
@@ -278,8 +308,12 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
                   />
                 ) : null}
                 <div className="min-w-0">
-                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
-                  <div className="text-lg font-semibold leading-tight break-words">{pickResult}</div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                    Ergebnis
+                  </div>
+                  <div className="text-lg font-semibold leading-tight break-words">
+                    {pickResult}
+                  </div>
                 </div>
               </div>
             )}

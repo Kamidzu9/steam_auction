@@ -113,6 +113,7 @@ jobs:
       - name: Build web
         run: npm run build --workspace=apps/web
         env:
+          CSS_TRANSFORMER_WASM: "1"
           NEXT_PUBLIC_API_URL: "http://localhost:3001"
 
       - name: Upload web artifact
@@ -174,11 +175,13 @@ jobs:
       - name: Build web (required by Tauri)
         run: npm run build --workspace=apps/web
         env:
+          CSS_TRANSFORMER_WASM: "1"
           NEXT_PUBLIC_API_URL: "http://localhost:3001"
 
       - name: Build desktop
         uses: tauri-apps/tauri-action@v0
         env:
+          CSS_TRANSFORMER_WASM: "1"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: ./apps/desktop
