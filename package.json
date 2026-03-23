@@ -9,6 +9,7 @@
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
     "test": "turbo run test",
+    "test:unit": "npm test --workspace=packages/shared && npm test --workspace=packages/api-client && npm test --workspace=apps/api && npm test --workspace=apps/web",
     "lint": "turbo run lint",
     "db:migrate": "npm run migrate --workspace=packages/db",
     "db:generate": "npm run generate --workspace=packages/db",
