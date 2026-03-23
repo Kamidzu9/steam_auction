@@ -18,12 +18,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "eslint": "^8.50.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@testing-library/react": "^16.2.0",
     "@types/node": "25.1.0",
     "@types/react": "19.2.10",
     "babel-plugin-react-compiler": "^19.0.0-beta-e552027-20250112",
+    "eslint": "^8.50.0",
+    "eslint-config-next": "^13.5.11",
     "jsdom": "^29.0.1",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.3",
