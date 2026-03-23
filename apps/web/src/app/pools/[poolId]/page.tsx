@@ -1,36 +1,80 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { getCurrentUserId } from "@/lib/session";
+import { useParams } from "next/navigation";
+import { useApi } from "../../../lib/ApiProvider";
 import PoolClient from "./PoolClient";
+import type { AuctionPool } from "@steam-auction/shared";
 
-export default async function PoolPage({ params }: { params: { poolId: string } | Promise<{ poolId: string }> }) {
-  const { poolId } = await Promise.resolve(params);
-  const userId = await getCurrentUserId();
+type PoolGame = {
+  appId: number;
+  name: string;
+  storeUrl?: string | null;
+  weight?: number;
+};
 
-  if (!userId) {
-    redirect("/dashboard");
+type PickEntry = {
+  id: string;
+  pickedAt: string;
+  mode: string;
+  avoidCount?: number | null;
+  game?: { name: string } | null;
+};
+
+type PoolDetail = AuctionPool & {
+  picks?: PickEntry[];
+};
+
+export default function PoolPage() {
+  const params = useParams<{ poolId: string }>();
+  const poolId = params?.poolId ?? "";
+  const { client, accessToken, isLoading } = useApi();
+  const [pool, setPool] = useState<PoolDetail | null>(null);
+  const [games, setGames] = useState<PoolGame[]>([]);
+  const [fetchState, setFetchState] = useState<"loading" | "done" | "notfound" | "error">("loading");
+
+  useEffect(() => {
+    if (isLoading || !poolId) return;
+    if (!accessToken) { setFetchState("done"); return; }
+
+    client.getPools()
+      .then((r) => {
+        const found = r.pools.find((p) => p.id === poolId) as PoolDetail | undefined;
+        if (!found) { setFetchState("notfound"); return; }
+        setPool(found);
+        setGames((found.games ?? []).map((pg) => ({
+          appId: pg.game?.appId ?? 0,
+          name: pg.game?.name ?? "Unknown",
+          storeUrl: pg.game?.storeUrl,
+          weight: pg.weight,
+        })));
+        setFetchState("done");
+      })
+      .catch(() => setFetchState("error"));
+  }, [client, accessToken, isLoading, poolId]);
+
+  if (fetchState === "loading" || isLoading) {
+    return (
+      <div className="space-y-6">
+        <section className="surface rounded-2xl p-6 animate-pulse">
+          <div className="h-8 w-48 bg-white/10 rounded mb-4" />
+          <div className="h-4 w-full bg-white/10 rounded mb-2" />
+        </section>
+      </div>
+    );
   }
 
-  const pool = await prisma.auctionPool.findFirst({
-    where: { id: poolId, ownerId: userId },
-    include: {
-      friend: true,
-      games: { include: { game: true } },
-      picks: { include: { game: true }, orderBy: { pickedAt: "desc" }, take: 5 },
-    },
-  });
-
-  if (!pool) {
-    notFound();
+  if (fetchState === "notfound" || (!isLoading && !pool && fetchState === "done")) {
+    return (
+      <div className="space-y-6">
+        <section className="surface rounded-2xl p-6">
+          <Link className="text-sm text-slate-400 hover:text-white" href="/pools">Back to Pools</Link>
+          <h1 className="font-display mt-3 text-2xl text-white">Pool not found</h1>
+        </section>
+      </div>
+    );
   }
-
-  const games = pool.games.map((pg) => ({
-    appId: pg.game.appId,
-    name: pg.game.name,
-    storeUrl: pg.game.storeUrl,
-    weight: pg.weight,
-  }));
 
   return (
     <div className="space-y-6">
@@ -38,13 +82,13 @@ export default async function PoolPage({ params }: { params: { poolId: string } 
         <Link className="text-sm text-slate-400 hover:text-white" href="/pools">
           Back to Pools
         </Link>
-        <h1 className="font-display mt-3 text-2xl text-white break-words">{pool.name}</h1>
+        <h1 className="font-display mt-3 text-2xl text-white break-words">{pool?.name}</h1>
         <p className="text-muted mt-2 text-sm break-words">
-          Friend: {pool.friend?.displayName ?? pool.friend?.steamId ?? "Unknown"}
+          Friend: {pool?.friend?.displayName ?? pool?.friend?.steamId ?? "Unknown"}
         </p>
         <p className="text-muted mt-1 text-sm">Games: {games.length}</p>
         <p className="text-muted mt-1 text-sm">
-          Erstellt: {new Date(pool.createdAt).toLocaleDateString("de-DE")}
+          Erstellt: {pool?.createdAt ? new Date(pool.createdAt).toLocaleDateString("de-DE") : ""}
         </p>
       </section>
 
@@ -55,7 +99,7 @@ export default async function PoolPage({ params }: { params: { poolId: string } 
           </p>
         </section>
       ) : (
-        <PoolClient poolId={pool.id} games={games} />
+        <PoolClient poolId={poolId} games={games} />
       )}
 
       <section className="surface rounded-2xl p-6">
@@ -75,7 +119,7 @@ export default async function PoolPage({ params }: { params: { poolId: string } 
         </div>
       </section>
 
-      {pool.picks.length > 0 ? (
+      {pool?.picks && pool.picks.length > 0 ? (
         <section className="surface rounded-2xl p-6">
           <h2 className="font-display text-lg text-white">Letzte Picks</h2>
           <div className="mt-3 grid gap-2 text-sm text-slate-300 md:grid-cols-2">

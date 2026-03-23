@@ -65,7 +65,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-4">
               <a
                 className="btn-animated inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-6 py-3 text-sm font-semibold text-slate-900 shadow-[0_12px_30px_rgba(245,158,11,0.25)] hover:scale-[1.02]"
-                href="/api/auth/steam"
+                href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"}/auth/steam`}
               >
                 <IconArrowRight className="h-4 w-4" />
                 Mit Steam verbinden
@@ -162,7 +162,7 @@ export default function Home() {
             <div className="mt-6 flex flex-wrap gap-3">
               <a
                 className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 hover:scale-[1.02]"
-                href="/api/auth/steam"
+                href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"}/auth/steam`}
               >
                 <IconArrowRight className="h-4 w-4" />
                 Jetzt loslegen

@@ -1,20 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-
-type User = {
-  id: string;
-  steamId: string;
-  displayName?: string | null;
-  avatarUrl?: string | null;
-};
-
-type Friend = {
-  steamid: string;
-};
+import { useApi } from "../../lib/ApiProvider";
+import { ApiError } from "@steam-auction/api-client";
 
 type Profile = {
   steamid: string;
@@ -26,83 +16,49 @@ type Profile = {
 type FetchState = "loading" | "success" | "error" | "unauthorized";
 
 function getErrorMessage(err: unknown) {
+  if (err instanceof ApiError) return err.message;
   if (err instanceof Error) return err.message;
   return "Request failed";
 }
 
-async function safeFetchJson<T>(input: RequestInfo, init?: RequestInit) {
-  const res = await fetch(input, init);
-  if (res.status === 401) {
-    throw new Error("UNAUTHORIZED");
-  }
-  const data = await res.json().catch(() => ({})) as T & { error?: string };
-  if (!res.ok) {
-    const message = typeof data.error === "string" ? data.error : "Request failed";
-    throw new Error(message);
-  }
-  return data;
-}
-
 export default function FriendsPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [friends, setFriends] = useState<Friend[]>([]);
+  const { client, accessToken, isLoading: authLoading } = useApi();
+  const [friends, setFriends] = useState<{ steamid: string }[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [fetchState, setFetchState] = useState<FetchState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const loadUser = useCallback(async () => {
-    try {
-      const data = await safeFetchJson<{ user: User | null }>("/api/me", { cache: "no-store" });
-      if (!data.user) {
-        router.push("/dashboard");
-        return null;
-      }
-      setUser(data.user);
-      return data.user;
-    } catch (err) {
-      if (getErrorMessage(err) === "UNAUTHORIZED") {
-        router.push("/dashboard");
-        return null;
-      }
-      throw err;
-    }
-  }, [router]);
-
   const loadFriends = useCallback(async (steamId: string) => {
     try {
-      const data = await safeFetchJson<{ friends: Friend[]; profiles?: Profile[] }>(
-        `/api/steam/friends?steamId=${encodeURIComponent(steamId)}`,
-        { cache: "no-store" }
-      );
+      const data = await client.getSteamFriends(steamId);
       setFriends(data.friends ?? []);
-      setProfiles(data.profiles ?? []);
+      setProfiles((data.profiles ?? []) as Profile[]);
       setFetchState("success");
     } catch (err) {
-      if (getErrorMessage(err) === "UNAUTHORIZED") {
+      if (err instanceof ApiError && err.status === 401) {
         setFetchState("unauthorized");
       } else {
         setFetchState("error");
         setErrorMessage(getErrorMessage(err));
       }
     }
-  }, []);
+  }, [client]);
 
   useEffect(() => {
-    async function init() {
-      setFetchState("loading");
-      try {
-        const userData = await loadUser();
-        if (userData?.steamId) {
-          await loadFriends(userData.steamId);
-        }
-      } catch (err) {
-        setFetchState("error");
-        setErrorMessage(getErrorMessage(err));
-      }
-    }
-    init();
-  }, [loadUser, loadFriends]);
+    if (authLoading) return;
+    if (!accessToken) { setFetchState("unauthorized"); return; }
+
+    setFetchState("loading");
+    client.getMe()
+      .then((r) => {
+        if (r.user?.steamId) return loadFriends(r.user.steamId);
+        setFetchState("unauthorized");
+      })
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) setFetchState("unauthorized");
+        else { setFetchState("error"); setErrorMessage(getErrorMessage(err)); }
+      });
+  }, [client, accessToken, authLoading, loadFriends]);
 
   const profilesMap = new Map(profiles.map(p => [p.steamid, p]));
 
@@ -167,7 +123,7 @@ export default function FriendsPage() {
       <section className="surface rounded-2xl p-6">
         <h1 className="font-display text-2xl text-white">Friends</h1>
         <p className="text-muted mt-2 text-sm">
-          Your Steam friends. {user?.displayName && `Playing as ${user.displayName}.`}
+          Your Steam friends.
         </p>
         {friends.length > 0 && (
           <p className="text-muted mt-1 text-xs">

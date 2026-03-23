@@ -1,15 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
-
-type User = {
-  id: string;
-  steamId: string;
-  displayName?: string | null;
-  avatarUrl?: string | null;
-};
+import { useApi } from "../../lib/ApiProvider";
+import { ApiError } from "@steam-auction/api-client";
 
 type Game = {
   appid: number;
@@ -20,27 +14,13 @@ type Game = {
 type FetchState = "loading" | "success" | "error" | "unauthorized";
 
 function getErrorMessage(err: unknown) {
+  if (err instanceof ApiError) return err.message;
   if (err instanceof Error) return err.message;
   return "Request failed";
 }
 
-async function safeFetchJson<T>(input: RequestInfo, init?: RequestInit) {
-  const res = await fetch(input, init);
-  if (res.status === 401) {
-    throw new Error("UNAUTHORIZED");
-  }
-  const data = await res.json().catch(() => ({})) as T & { error?: string };
-  if (!res.ok) {
-    const message = typeof data.error === "string" ? data.error : "Request failed";
-    throw new Error(message);
-  }
-  return data;
-}
-
 function formatPlaytime(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes}m`;
-  }
+  if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
   if (hours < 100) {
     const mins = minutes % 60;
@@ -50,63 +30,41 @@ function formatPlaytime(minutes: number): string {
 }
 
 export default function LibraryPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const { client, accessToken, isLoading: authLoading } = useApi();
   const [games, setGames] = useState<Game[]>([]);
   const [fetchState, setFetchState] = useState<FetchState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const loadUser = useCallback(async () => {
-    try {
-      const data = await safeFetchJson<{ user: User | null }>("/api/me", { cache: "no-store" });
-      if (!data.user) {
-        router.push("/dashboard");
-        return null;
-      }
-      setUser(data.user);
-      return data.user;
-    } catch (err) {
-      if (getErrorMessage(err) === "UNAUTHORIZED") {
-        router.push("/dashboard");
-        return null;
-      }
-      throw err;
-    }
-  }, [router]);
-
   const loadGames = useCallback(async (steamId: string) => {
     try {
-      const data = await safeFetchJson<{ games: Game[] }>(
-        `/api/steam/owned-games?steamId=${encodeURIComponent(steamId)}`,
-        { cache: "no-store" }
-      );
-      setGames(data.games ?? []);
+      const data = await client.getOwnedGames(steamId);
+      setGames((data.games ?? []).map((g) => ({ appid: g.appid, name: g.name, playtime_forever: g.playtime_forever })));
       setFetchState("success");
     } catch (err) {
-      if (getErrorMessage(err) === "UNAUTHORIZED") {
+      if (err instanceof ApiError && err.status === 401) {
         setFetchState("unauthorized");
       } else {
         setFetchState("error");
         setErrorMessage(getErrorMessage(err));
       }
     }
-  }, []);
+  }, [client]);
 
   useEffect(() => {
-    async function init() {
-      setFetchState("loading");
-      try {
-        const userData = await loadUser();
-        if (userData?.steamId) {
-          await loadGames(userData.steamId);
-        }
-      } catch (err) {
-        setFetchState("error");
-        setErrorMessage(getErrorMessage(err));
-      }
-    }
-    init();
-  }, [loadUser, loadGames]);
+    if (authLoading) return;
+    if (!accessToken) { setFetchState("unauthorized"); return; }
+
+    setFetchState("loading");
+    client.getMe()
+      .then((r) => {
+        if (r.user?.steamId) return loadGames(r.user.steamId);
+        setFetchState("unauthorized");
+      })
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) setFetchState("unauthorized");
+        else { setFetchState("error"); setErrorMessage(getErrorMessage(err)); }
+      });
+  }, [client, accessToken, authLoading, loadGames]);
 
   if (fetchState === "loading") {
     return (
@@ -169,7 +127,7 @@ export default function LibraryPage() {
       <section className="surface rounded-2xl p-6">
         <h1 className="font-display text-2xl text-white">Library</h1>
         <p className="text-muted mt-2 text-sm">
-          Your Steam owned games library. {user?.displayName && `Playing as ${user.displayName}.`}
+          Your Steam owned games library.
         </p>
         {games.length > 0 && (
           <p className="text-muted mt-1 text-xs">
