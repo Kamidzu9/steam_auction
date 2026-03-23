@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Build a standalone output so Tauri can find the `.next/standalone` folder
+  output: "standalone",
   reactCompiler: true,
   images: {
     remotePatterns: [
