@@ -1,32 +1,203 @@
-# Steam Auction MVP
+# Steam Auction
 
-A full-featured web application for comparing Steam libraries with friends and picking random co-op games from shared auction pools.
+A multi-platform application for comparing Steam libraries with friends and picking random co-op games from shared auction pools.
+
+## 🏗️ Architecture
+
+This repository is a **monorepo** containing:
+
+| Package / App | Description |
+|---|---|
+| `apps/api` | Fastify backend – all business logic, JWT auth, Steam OpenID, database access |
+| `apps/web` | Next.js frontend – pure UI layer, consumes `apps/api` via HTTP |
+| `apps/desktop` | Tauri configuration for packaging the web frontend as a native desktop app |
+| `packages/db` | Prisma ORM client and migrations (used by `apps/api` only) |
+| `packages/shared` | Types, Zod validation schemas, and utilities shared across all packages |
+| `packages/api-client` | Type-safe HTTP client used by `apps/web` and future mobile clients |
 
 ## 🎮 Features
 
 ### Authentication & Security
-- **Steam OpenID Login** - Secure authentication via Steam
-- **Session Management** - HTTPOnly cookies with refresh tokens (30-day expiry)
-- **Authorization Guards** - All protected routes require authentication
-- **Input Validation** - Comprehensive Zod validation on all API endpoints
-- **Secure by Default** - No data leaks, proper 401/403/404 responses
+- **Steam OpenID Login** – Secure authentication via Steam's OpenID 2.0
+- **JWT Auth** – Access tokens (15 min) + rotating refresh tokens (30 days)
+- **httpOnly Cookies** – Refresh token protected from JavaScript; access token verified server-side
+- **Auth Guards** – Fastify `preHandler` on every protected route
+- **Input Validation** – Zod schemas on all API endpoints (shared between backend and client)
 
 ### User Features
-- **Dashboard** - Overview of your pools, friends, and quick actions
-- **Friends Management** - Load and display Steam friends
-- **Library** - View your owned Steam games with playtime
-- **Pool Management** - Create, view, and manage auction pools with friends
-- **Random Game Picker** - Weighted random selection with avoid-recent-picks mode
-- **Profile** - View account details and logout
+- **Dashboard** – Load Steam library, pick shared games with friends, spin the wheel
+- **Friends Management** – Load and store Steam friends list
+- **Library** – View owned Steam games with playtime
+- **Pool Management** – Create and manage auction pools per friend
+- **Random Game Picker** – Weighted random selection with avoid-recent-picks mode
+- **Profile** – Account details and logout
+- **Leaderboard & Recommendations** – Community picks overview
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 16 (App Router) + TypeScript
-- **Styling**: Tailwind CSS 4.0
-- **Database**: Prisma + SQLite (for MVP, production-ready schema)
-- **Authentication**: Steam OpenID + Session-based auth
-- **Validation**: Zod for input validation
-- **Testing**: Vitest + Testing Library
+| Layer | Technology |
+|---|---|
+| API server | Fastify 5 + TypeScript |
+| Frontend | Next.js 16 (App Router) + React 19 |
+| Styling | Tailwind CSS 4 |
+| Database | Prisma + SQLite |
+| Auth | Steam OpenID + JWT (`@fastify/jwt`) |
+| Validation | Zod (shared) |
+| Testing | Vitest |
+| Desktop | Tauri 2 |
+
+## 📋 Prerequisites
+
+- Node.js 18+
+- npm 9+ (workspaces support required)
+- A Steam Web API Key ([Get one here](https://steamcommunity.com/dev/apikey))
+
+## 🚀 Setup
+
+### 1. Clone and Install
+
+```bash
+git clone <repository-url>
+cd steam_auction
+npm install
+```
+
+### 2. Environment Configuration
+
+Copy the example environment file and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Key variables:
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | SQLite path, e.g. `file:./dev.db` |
+| `JWT_SECRET` | Random secret, at least 32 characters |
+| `STEAM_API_KEY` | Your Steam Web API key |
+| `STEAM_REALM` | Public base URL of the API (e.g. `http://localhost:3001`) |
+| `FRONTEND_URL` | URL of the Next.js app (e.g. `http://localhost:3000`) |
+| `NEXT_PUBLIC_API_URL` | Same as `STEAM_REALM` — accessible from the browser |
+
+### 3. Database Setup
+
+```bash
+# Generate the Prisma client
+npm run db:generate
+
+# Run migrations
+npm run db:migrate
+```
+
+### 4. Run in Development
+
+```bash
+# Start all apps in parallel (API on :3001, web on :3000)
+npm run dev
+```
+
+Or start them individually:
+
+```bash
+# API only
+npm run dev --workspace=apps/api
+
+# Web only
+npm run dev --workspace=apps/web
+```
+
+### 5. Build for Production
+
+```bash
+npm run build
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run shared package tests only
+npm test --workspace=packages/shared
+
+# Run API tests only
+npm test --workspace=apps/api
+```
+
+## 📱 Desktop App (Tauri)
+
+The `apps/desktop` directory contains the Tauri configuration for packaging the Next.js frontend as a native desktop application.
+
+```bash
+# Prerequisites: install Rust + Tauri CLI
+cargo install tauri-cli
+
+# Development
+npm run dev --workspace=apps/desktop
+
+# Build desktop app
+npm run build --workspace=apps/desktop
+```
+
+## 🔌 API Endpoints
+
+All endpoints are served by the Fastify backend (`apps/api`) on port `3001`.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/health` | – | Health check |
+| `GET` | `/auth/steam` | – | Redirect to Steam OpenID login |
+| `GET` | `/auth/steam/callback` | – | Steam callback, issues JWT |
+| `POST` | `/auth/refresh` | Cookie | Rotate refresh token, return new access token |
+| `POST` | `/auth/logout` | Cookie | Revoke session |
+| `GET` | `/me` | JWT | Get current user |
+| `GET` | `/friends` | JWT | List saved friends |
+| `POST` | `/friends` | JWT | Add a friend by Steam ID |
+| `POST` | `/friends/bulk` | JWT | Bulk import friends |
+| `DELETE` | `/friends` | JWT | Remove a friend |
+| `GET` | `/pools` | JWT | List auction pools |
+| `POST` | `/pools` | JWT | Create a pool |
+| `POST` | `/pools/:id/games` | JWT | Add a game to a pool |
+| `POST` | `/pools/:id/pick` | JWT | Pick a random game |
+| `GET` | `/pools/:id/recent-picks` | JWT | Get recently picked app IDs |
+| `GET` | `/steam/owned-games` | JWT | Fetch owned games for a Steam ID |
+| `GET` | `/steam/friends` | JWT | Fetch Steam friends list |
+| `GET` | `/steam/app-details` | – | Fetch store app details |
+| `GET` | `/leaderboard` | – | Community pick leaderboard |
+| `GET` | `/recommendations` | – | Recommendations |
+
+## 🗂️ Repository Structure
+
+```
+steam_auction/
+├── apps/
+│   ├── api/                  # Fastify backend
+│   │   └── src/
+│   │       ├── config.ts     # Env var validation
+│   │       ├── server.ts     # App factory
+│   │       ├── index.ts      # Entry point
+│   │       ├── lib/          # session, steam, steam-api helpers
+│   │       ├── plugins/      # Fastify auth plugin
+│   │       └── routes/       # auth, me, friends, pools, steam, …
+│   ├── web/                  # Next.js frontend (pure UI)
+│   │   └── src/
+│   │       ├── app/          # Next.js App Router pages
+│   │       ├── components/   # UI components
+│   │       └── lib/          # ApiProvider (React context + hooks)
+│   └── desktop/              # Tauri desktop wrapper
+│       └── src-tauri/
+├── packages/
+│   ├── db/                   # Prisma client + migrations
+│   ├── shared/               # Types, validation schemas, utilities
+│   └── api-client/           # HTTP client (web + future mobile)
+├── turbo.json                # Turborepo build pipeline
+├── tsconfig.base.json        # Shared TypeScript base config
+└── .env.example              # Environment variable template
+```
+
 
 ## 📋 Prerequisites
 
