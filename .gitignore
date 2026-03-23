@@ -15,6 +15,7 @@ coverage
 
 # next.js
 .next/
+apps/web/out/
 /out/
 
 # production

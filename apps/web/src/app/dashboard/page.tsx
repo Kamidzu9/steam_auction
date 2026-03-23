@@ -42,7 +42,7 @@ export default function DashboardPage() {
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
             className="btn-animated rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white hover:border-white/30"
-            href="/pools/sample"
+            href="/pools"
           >
             Beispiel-Pool
           </Link>

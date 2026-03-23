@@ -2,9 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Note: output: "export" cannot be used with dynamic routes that don't have generateStaticParams() returning all possible params
-  // For Tauri deployment, consider implementing proper generateStaticParams() with database access or using a different approach
-  // output: "export",
+  output: "export",
   reactCompiler: true,
   images: {
     remotePatterns: [

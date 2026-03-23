@@ -2,9 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import AuctionWheel, { AuctionWheelHandle } from "@/components/AuctionWheel";
-import { useApi } from "../../../lib/ApiProvider";
-import { ApiError } from "@steam-auction/api-client";
+import AuctionWheel, { AuctionWheelHandle } from "../../components/AuctionWheel";
 
 type PoolGame = {
   appId: number;
@@ -15,15 +13,24 @@ type PoolGame = {
 
 type WheelItem = { appid: number; name: string };
 type SpinState = "idle" | "preparing" | "spinning" | "result";
+type ApiErrorResponse = { error?: string };
 
 function getErrorMessage(err: unknown) {
-  if (err instanceof ApiError) return err.message;
   if (err instanceof Error) return err.message;
   return "Request failed";
 }
 
+async function safeFetchJson<T>(input: RequestInfo, init?: RequestInit) {
+  const res = await fetch(input, init);
+  const data = (await res.json().catch(() => ({}))) as T & ApiErrorResponse;
+  if (!res.ok) {
+    const message = typeof data.error === "string" ? data.error : "Request failed";
+    throw new Error(message);
+  }
+  return data as T & ApiErrorResponse;
+}
+
 export default function PoolClient({ poolId, games }: { poolId: string; games: PoolGame[] }) {
-  const { client } = useApi();
   const wheelRef = useRef<AuctionWheelHandle | null>(null);
   const [pickMode, setPickMode] = useState<"pure" | "avoid">("pure");
   const [avoidCount, setAvoidCount] = useState(3);
@@ -56,16 +63,17 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
       return;
     }
     try {
-      const data = await client.getRecentPicks(poolId, avoidCount);
-      setRecentAvoidAppIds(
-        Array.isArray(data.appIds)
-          ? data.appIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
-          : []
+      const data = await safeFetchJson<{ appIds?: number[] }>(
+        `/api/pools/${poolId}/recent-picks?limit=${avoidCount}`,
       );
+      const appIds = Array.isArray(data.appIds)
+        ? data.appIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
+        : [];
+      setRecentAvoidAppIds(appIds);
     } catch {
       setRecentAvoidAppIds([]);
     }
-  }, [avoidCount, client, pickMode, poolId]);
+  }, [avoidCount, pickMode, poolId]);
 
   useEffect(() => {
     void refreshRecentAvoid();
@@ -86,11 +94,23 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
     setSpinState("spinning");
     setStatus("Spiel wird ausgewaehlt...");
     try {
-      const data = await client.pickFromPool(poolId, {
-        mode: pickMode,
-        avoidCount,
-        appIds: wheelGames.map((game) => game.appId),
-      });
+      const data = await safeFetchJson<{ pick?: { name: string; appId?: number }; error?: string }>(
+        `/api/pools/${poolId}/pick`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: pickMode,
+            avoidCount,
+            appIds: wheelGames.map((game) => game.appId),
+          }),
+        },
+      );
+      if (data.error) {
+        setError(data.error);
+        setStatus("");
+        return;
+      }
       const pickedName = data.pick?.name;
       const pickedAppId = data.pick?.appId;
       if (pickedName) {
@@ -100,7 +120,7 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
             const durationMs = Math.max(200, Math.round(spinSeconds * 1000));
             await wheelRef.current.spinTo(pickedAppId, durationMs);
           } catch {
-            // ignore spin errors
+            // ignore
           }
         }
         setPickResult(pickedName);
@@ -151,7 +171,7 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
               onChange={(e) => {
                 const next = Number(e.target.value);
                 setAvoidCount((prev) =>
-                  Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev
+                  Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev,
                 );
               }}
               disabled={pickMode !== "avoid" || isSpinBusy}
@@ -187,7 +207,13 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
             items={wheelGames.map((g) => ({ appid: g.appId, name: g.name }))}
             onCenterClick={() => void pickGame()}
             disabled={!canPick}
-            disabledReason={isSpinBusy ? (spinState === "preparing" ? "Spin wird vorbereitet..." : "Wheel dreht...") : undefined}
+            disabledReason={
+              isSpinBusy
+                ? spinState === "preparing"
+                  ? "Spin wird vorbereitet..."
+                  : "Wheel dreht..."
+                : undefined
+            }
             allowDrag={false}
             onActiveItemChange={(item) =>
               setActiveWheelItem(item ? { appid: item.appid, name: item.name } : null)

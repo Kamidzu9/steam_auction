@@ -1149,7 +1149,7 @@ export default function DashboardClient() {
             </span>
             <Link
               className="inline-flex items-center gap-1 text-amber-200 hover:text-amber-100"
-              href={`/pools/${pool.id}`}
+              href={`/pools?poolId=${encodeURIComponent(pool.id)}`}
             >
               <IconArrowRight className="h-4 w-4" />
               Pool oeffnen
