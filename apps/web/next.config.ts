@@ -2,8 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Static export so Tauri can serve the `out/` directory without a Node server
-  output: "export",
+  // Note: output: "export" cannot be used with dynamic routes that don't have generateStaticParams() returning all possible params
+  // For Tauri deployment, consider implementing proper generateStaticParams() with database access or using a different approach
+  // output: "export",
   reactCompiler: true,
   images: {
     remotePatterns: [
