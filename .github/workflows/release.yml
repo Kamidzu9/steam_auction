@@ -1,0 +1,191 @@
+name: Pre-Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Pre-release version (e.g. 0.2.0-beta.1)"
+        required: true
+        default: "0.1.0-beta.1"
+  push:
+    tags:
+      - "v*.*.*-*" # matches pre-release tags like v0.2.0-beta.1
+
+permissions:
+  contents: write
+
+jobs:
+  # ── Quality gate ─────────────────────────────────────────────────────────────
+  test:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check (shared)
+        run: npx tsc --noEmit --project packages/shared/tsconfig.json
+
+      - name: Type-check (api)
+        run: npx tsc --noEmit --project apps/api/tsconfig.json
+
+      - name: Type-check (api-client)
+        run: npx tsc --noEmit --project packages/api-client/tsconfig.json
+
+      - name: Test (shared)
+        run: npm test --workspace=packages/shared
+
+      - name: Test (api)
+        run: npm test --workspace=apps/api
+
+      - name: Test (api-client)
+        run: npm test --workspace=packages/api-client
+
+      - name: Test (web)
+        run: npm test --workspace=apps/web
+
+  # ── Backend artifact ─────────────────────────────────────────────────────────
+  build-api:
+    name: Build API
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared (required by api)
+        run: npm run build --workspace=packages/shared
+
+      - name: Build api
+        run: npm run build --workspace=apps/api
+
+      - name: Upload API artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-dist
+          path: apps/api/dist/
+          retention-days: 7
+
+  # ── Web (Next.js) artifact ───────────────────────────────────────────────────
+  build-web:
+    name: Build Web
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web
+        run: npm run build --workspace=apps/web
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:3001"
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: apps/web/.next/
+          retention-days: 7
+
+  # ── Desktop (Tauri) artifacts ────────────────────────────────────────────────
+  build-desktop:
+    name: Build Desktop (${{ matrix.platform }})
+    needs: [test, build-web]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            args: ""
+          - platform: windows-latest
+            args: ""
+          - platform: macos-latest
+            args: "--target aarch64-apple-darwin"
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Linux system dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./apps/desktop/src-tauri -> target"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web (required by Tauri)
+        run: npm run build --workspace=apps/web
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:3001"
+
+      - name: Build desktop
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: ./apps/desktop
+          tagName: ${{ github.ref_name }}
+          releaseName: "Steam Auction ${{ github.ref_name }}"
+          releaseBody: |
+            ## Pre-Release Build
+
+            > ⚠️ This is a **pre-release** build intended for testing only. Do not use in production.
+
+            ### What's included
+            - Desktop app (Windows, macOS, Linux)
+            - Built from commit `${{ github.sha }}`
+
+            See [TESTING.md](./TESTING.md) for details on how to test this release.
+          releaseDraft: false
+          prerelease: true
+          args: ${{ matrix.args }}
