@@ -1,2 +1,2 @@
-export { ApiClient, ApiError } from "./client.js";
-export type { ApiClientOptions } from "./client.js";
+export { ApiClient, ApiError } from "./client";
+export type { ApiClientOptions } from "./client";
