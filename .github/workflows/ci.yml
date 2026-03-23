@@ -28,7 +28,7 @@ jobs:
         run: npm ci
 
       - name: Lint (web)
-        run: npm run lint --workspace=apps/web
+        run: npm --workspace=apps/web run lint
 
       - name: Type-check (shared)
         run: npx tsc --noEmit --project packages/shared/tsconfig.json
