@@ -131,10 +131,16 @@ export default function LibraryPage() {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <h1 className="font-display text-2xl text-white">Library</h1>
+          <h1 className="font-display text-2xl text-white">Bibliothek</h1>
           <p className="text-muted mt-2 text-sm">
-            You need to be logged in to view your library.
+            Du musst angemeldet sein, um deine Spielebibliothek zu sehen.
           </p>
+          <a
+            href="/api/auth/steam"
+            className="btn-animated mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_8px_20px_rgba(245,158,11,0.2)] hover:scale-[1.02]"
+          >
+            Mit Steam verbinden
+          </a>
         </section>
       </div>
     );
@@ -144,56 +150,54 @@ export default function LibraryPage() {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <h1 className="font-display text-2xl text-white">Library</h1>
-          <p className="text-muted mt-2 text-sm">
-            Your Steam owned games library.
-          </p>
-        </section>
-        <section className="surface rounded-2xl p-6">
-          <div className="text-center py-8">
-            <p className="text-red-400 text-sm mb-4">Error loading games: {errorMessage}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="btn-animated rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
-            >
-              Retry
-            </button>
-          </div>
+          <h1 className="font-display text-2xl text-white">Bibliothek</h1>
+          <p className="text-muted mt-2 text-sm">Deine Steam-Spielebibliothek.</p>
+          <p className="mt-4 text-sm text-rose-300">{errorMessage}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-animated mt-3 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+          >
+            Erneut versuchen
+          </button>
         </section>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <section className="surface rounded-2xl p-6">
-        <h1 className="font-display text-2xl text-white">Library</h1>
-        <p className="text-muted mt-2 text-sm">
-          Your Steam owned games library. {user?.displayName && `Playing as ${user.displayName}.`}
-        </p>
-        {games.length > 0 && (
-          <p className="text-muted mt-1 text-xs">
-            {games.length} game{games.length !== 1 ? "s" : ""} found
-          </p>
-        )}
+    <div className="space-y-5">
+      <section className="surface rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="font-display text-xl text-white">Bibliothek</h1>
+            {user?.displayName && (
+              <p className="text-muted mt-1 text-sm">Angemeldet als {user.displayName}</p>
+            )}
+          </div>
+          {games.length > 0 && (
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400">
+              {games.length} Spiele
+            </span>
+          )}
+        </div>
       </section>
 
-      <section className="surface rounded-2xl p-6">
+      <section className="surface rounded-2xl p-5">
         {games.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="py-8 text-center">
             <p className="text-muted text-sm">
-              No games found in your library. Make sure your Steam profile is public.
+              Keine Spiele gefunden. Stelle sicher, dass dein Steam-Profil oeffentlich ist.
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {games.map((game) => (
               <a
                 key={game.appid}
                 href={`https://store.steampowered.com/app/${game.appid}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="card-animated group min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 text-left hover:border-white/30 transition-all"
+                className="card-animated group min-w-0 rounded-2xl border border-white/10 bg-black/20 p-3 text-left hover:border-white/30 transition-all"
               >
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
@@ -207,18 +211,15 @@ export default function LibraryPage() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-display text-sm text-white break-words line-clamp-2 group-hover:text-blue-300 transition-colors">
+                    <h3 className="font-display text-sm text-white break-words line-clamp-2 group-hover:text-slate-200 transition-colors">
                       {game.name}
                     </h3>
-                    {game.playtime_forever !== undefined && game.playtime_forever > 0 && (
+                    {game.playtime_forever !== undefined && game.playtime_forever > 0 ? (
                       <p className="text-xs text-slate-400 mt-1">
-                        Played: {formatPlaytime(game.playtime_forever)}
+                        {formatPlaytime(game.playtime_forever)} gespielt
                       </p>
-                    )}
-                    {(!game.playtime_forever || game.playtime_forever === 0) && (
-                      <p className="text-xs text-slate-500 mt-1">
-                        Not played
-                      </p>
+                    ) : (
+                      <p className="text-xs text-slate-600 mt-1">Noch nicht gespielt</p>
                     )}
                   </div>
                 </div>
