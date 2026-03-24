@@ -142,6 +142,41 @@ npm run dev --workspace=apps/desktop
 npm run build --workspace=apps/desktop
 ```
 
+Linux troubleshooting (Ubuntu / .deb):
+
+- If startup logs include `DRM_IOCTL_MODE_CREATE_DUMB failed: Permission denied` or `Failed to create GBM buffer`, run the app with `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
+- The desktop app now sets this fallback automatically on Linux, but you can also force it manually:
+
+```bash
+WEBKIT_DISABLE_DMABUF_RENDERER=1 steam-auction-desktop
+```
+
+- If permissions errors persist, verify the user has access to `/dev/dri/renderD*` (typically via the `render` and `video` groups), then log out/in.
+
+Steam login troubleshooting (`Could not connect to localhost: Connection refused`):
+
+- The Steam login button targets `${NEXT_PUBLIC_API_URL}/auth/steam` and defaults to `http://localhost:3001`.
+- Ensure the API server is running before login:
+
+```bash
+npm run dev --workspace=apps/api
+```
+
+- For desktop builds, set API env vars so callback and redirect targets are valid for your runtime:
+
+```bash
+STEAM_REALM="http://localhost:3001"
+FRONTEND_URL="tauri://localhost"
+```
+
+- If you run web + api in dev (without packaged desktop), use:
+
+```bash
+STEAM_REALM="http://localhost:3001"
+FRONTEND_URL="http://localhost:3000"
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+```
+
 ## 🔌 API Endpoints
 
 All endpoints are served by the Fastify backend (`apps/api`) on port `3001`.

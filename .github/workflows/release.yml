@@ -230,14 +230,53 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: "http://localhost:3001"
 
-      - name: Build desktop
+      - name: Determine tag
+        id: set-tag
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const core = require('@actions/core');
+            const github = require('@actions/github');
+            const eventName = github.context.eventName;
+            const ref = github.context.ref || '';
+            let tag = '';
+            if (eventName === 'workflow_dispatch') {
+              tag = (github.context.payload && github.context.payload.inputs && github.context.payload.inputs.version) || '';
+            } else {
+              if (ref.startsWith('refs/tags/')) tag = ref.replace('refs/tags/', '');
+              else if (ref.startsWith('refs/heads/')) tag = ref.replace('refs/heads/', '');
+              else tag = github.context.ref_name || '';
+            }
+            core.setOutput('tag', tag);
+
+      - name: Check if tag exists
+        id: check-tag
+        uses: actions/github-script@v6
+        with:
+          tag: ${{ steps.set-tag.outputs.tag }}
+          script: |
+            const core = require('@actions/core');
+            const github = require('@actions/github');
+            const tag = core.getInput('tag');
+            if (!tag) { core.setOutput('exists', 'false'); return; }
+            const owner = github.context.repo.owner;
+            const repo = github.context.repo.repo;
+            try {
+              await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` });
+              core.setOutput('exists', 'true');
+            } catch (e) {
+              core.setOutput('exists', 'false');
+            }
+
+      - name: Build desktop (create release)
+        if: steps.check-tag.outputs.exists == 'false'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: ./apps/desktop
-          tagName: ${{ github.ref_name }}
-          releaseName: "Steam Auction ${{ github.ref_name }}"
+          tagName: ${{ steps.set-tag.outputs.tag }}
+          releaseName: "Steam Auction ${{ steps.set-tag.outputs.tag }}"
           releaseBody: |
             ## Pre-Release Build
 

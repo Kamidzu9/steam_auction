@@ -16,3 +16,6 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export * from "@prisma/client";
+
+// Provide a default export for environments that import the package default.
+export default prisma;
