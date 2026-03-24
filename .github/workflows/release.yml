@@ -343,6 +343,23 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: "http://localhost:3001"
 
+      - name: Determine tag
+        id: set-tag
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const eventName = context.eventName;
+            const ref = context.ref || '';
+            let tag = '';
+            if (eventName === 'workflow_dispatch') {
+              tag = (context.payload && context.payload.inputs && context.payload.inputs.version) || '';
+            } else {
+              if (ref.startsWith('refs/tags/')) tag = ref.replace('refs/tags/', '');
+              else if (ref.startsWith('refs/heads/')) tag = ref.replace('refs/heads/', '');
+              else tag = context.ref_name || '';
+            }
+            core.setOutput('tag', tag);
+
       - name: Initialize Android project (if missing)
         run: |
           if [ ! -d "apps/desktop/src-tauri/gen/android" ]; then
@@ -359,3 +376,13 @@ jobs:
           path: apps/desktop/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
           if-no-files-found: error
           retention-days: 7
+
+      - name: Upload APK to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.set-tag.outputs.tag }}
+          files: apps/desktop/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          prerelease: true
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
