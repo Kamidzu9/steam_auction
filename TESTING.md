@@ -106,13 +106,13 @@ npx vitest
 | `pools.test.ts`   | `POST /pools` (401/400/201/default name), `POST /pools/:id/games` (401/404/400/forbidden word/success), `POST /pools/:id/pick` (401/404/empty pool/success/appIds filter/avoid mode/invalid body), `GET /pools/:id/recent-picks` (401/zero limit/404/success) |
 | `friends.test.ts` | `GET /friends` (401/200 with data), `POST /friends` (401/400/201/correct userId), `POST /friends/bulk` (401/400/empty array/transaction), `DELETE /friends` (401/400/by id/by steamId)                                                                        |
 
-### `apps/web` — 7 tests
+### `apps/web` — 6 tests
 
-| File                 | What is tested                                                                                                                                                                                                                                                     |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `BottomNav.test.tsx` | Renders nothing when logged out, renders nothing while loading, renders nav when authenticated, all 6 nav links present, `aria-current="page"` on active route, no `aria-current` on inactive links, nested route matching (`/pools/abc-123` activates Pools link) |
+| File                 | What is tested                                                                                                                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `BottomNav.test.tsx` | Always renders nav (regardless of auth state), renders all 6 nav links, `aria-current="page"` on active route, no `aria-current` on inactive links, nested route matching (`/pools/abc-123` activates Pools link) |
 
-**Total: 109 tests across 4 packages/apps.**
+**Total: 108 tests across 4 packages/apps.**
 
 ---
 
