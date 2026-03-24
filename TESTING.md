@@ -124,11 +124,11 @@ The CI pipeline runs on every push to `main`/`develop` and on every pull request
 
 ### Jobs
 
-| Job | Runner | Description |
-| --- | --- | --- |
-| `quality-gate` | `ubuntu-latest` | Clean install, Linux CSS native binding verification, TypeScript checks, and all Vitest suites |
-| `build-api` | `ubuntu-latest` | Builds `packages/shared` and `apps/api` to catch compile regressions |
-| `build-web` | Matrix (`ubuntu-latest`, `windows-latest`, `macos-latest`) | Verifies platform-native CSS bindings and runs `next build` on each OS |
+| Job            | Runner                                                     | Description                                                                                    |
+| -------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `quality-gate` | `ubuntu-latest`                                            | Clean install, Linux CSS native binding verification, TypeScript checks, and all Vitest suites |
+| `build-api`    | `ubuntu-latest`                                            | Builds `packages/shared` and `apps/api` to catch compile regressions                           |
+| `build-web`    | Matrix (`ubuntu-latest`, `windows-latest`, `macos-latest`) | Verifies platform-native CSS bindings and runs `next build` on each OS                         |
 
 ### Why the matrix build exists
 
