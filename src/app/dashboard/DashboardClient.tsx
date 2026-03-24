@@ -959,7 +959,7 @@ export default function DashboardClient() {
                 </button>
                 <button
                   className={`btn-animated rounded-full px-3 py-1 text-sm transition ${
-                    selectedTags.join("|") === "multiplayer"
+                    selectedTags.join("|") === ["multiplayer"].join("|")
                       ? "border border-emerald-400/60 bg-emerald-400/15 text-emerald-200"
                       : "border border-white/20 text-slate-300 hover:border-white/40"
                   }`}
