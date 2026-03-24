@@ -166,9 +166,11 @@ The pre-release pipeline builds all platform artifacts and publishes them as a G
 - **`api-dist`** — compiled Fastify backend (7-day retention).
 - **`web-build`** — compiled Next.js frontend (7-day retention).
 - **Desktop installers** — attached to the GitHub pre-release:
-  - Linux: `.AppImage`, `.deb`
+  - Linux: `.deb`, `.rpm`
   - Windows: `.msi`, `.exe`
   - macOS: `.dmg` (Apple Silicon)
+
+> Linux AppImage bundling is currently disabled in CI because Tauri's linuxdeploy-based AppImage step is failing on modern Ubuntu GitHub runners while `.deb` and `.rpm` continue to build reliably.
 
 > ⚠️ All releases are tagged **pre-release**. They are not deployed to production.
 

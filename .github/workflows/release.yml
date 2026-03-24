@@ -129,7 +129,7 @@ jobs:
       matrix:
         include:
           - platform: ubuntu-22.04
-            args: ""
+            args: "--bundles deb,rpm"
           - platform: windows-latest
             args: ""
           - platform: macos-latest
@@ -209,7 +209,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPIMAGE_COMP: xz
         with:
           projectPath: ./apps/desktop
           tagName: ${{ github.ref_name }}
