@@ -205,6 +205,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPIMAGE_COMP: xz
         with:
           projectPath: ./apps/desktop
           tagName: ${{ github.ref_name }}
