@@ -6,18 +6,19 @@ A multi-platform application for comparing Steam libraries with friends and pick
 
 This repository is a **monorepo** containing:
 
-| Package / App | Description |
-|---|---|
-| `apps/api` | Fastify backend – all business logic, JWT auth, Steam OpenID, database access |
-| `apps/web` | Next.js frontend – pure UI layer, consumes `apps/api` via HTTP |
-| `apps/desktop` | Tauri configuration for packaging the web frontend as a native desktop app |
-| `packages/db` | Prisma ORM client and migrations (used by `apps/api` only) |
-| `packages/shared` | Types, Zod validation schemas, and utilities shared across all packages |
-| `packages/api-client` | Type-safe HTTP client used by `apps/web` and future mobile clients |
+| Package / App         | Description                                                                   |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `apps/api`            | Fastify backend – all business logic, JWT auth, Steam OpenID, database access |
+| `apps/web`            | Next.js frontend – pure UI layer, consumes `apps/api` via HTTP                |
+| `apps/desktop`        | Tauri configuration for packaging the web frontend as a native desktop app    |
+| `packages/db`         | Prisma ORM client and migrations (used by `apps/api` only)                    |
+| `packages/shared`     | Types, Zod validation schemas, and utilities shared across all packages       |
+| `packages/api-client` | Type-safe HTTP client used by `apps/web` and future mobile clients            |
 
 ## 🎮 Features
 
 ### Authentication & Security
+
 - **Steam OpenID Login** – Secure authentication via Steam's OpenID 2.0
 - **JWT Auth** – Access tokens (15 min) + rotating refresh tokens (30 days)
 - **httpOnly Cookies** – Refresh token protected from JavaScript; access token verified server-side
@@ -25,6 +26,7 @@ This repository is a **monorepo** containing:
 - **Input Validation** – Zod schemas on all API endpoints (shared between backend and client)
 
 ### User Features
+
 - **Dashboard** – Load Steam library, pick shared games with friends, spin the wheel
 - **Friends Management** – Load and store Steam friends list
 - **Library** – View owned Steam games with playtime
@@ -35,16 +37,16 @@ This repository is a **monorepo** containing:
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| API server | Fastify 5 + TypeScript |
-| Frontend | Next.js 16 (App Router) + React 19 |
-| Styling | Tailwind CSS 4 |
-| Database | Prisma + SQLite |
-| Auth | Steam OpenID + JWT (`@fastify/jwt`) |
-| Validation | Zod (shared) |
-| Testing | Vitest |
-| Desktop | Tauri 2 |
+| Layer      | Technology                          |
+| ---------- | ----------------------------------- |
+| API server | Fastify 5 + TypeScript              |
+| Frontend   | Next.js 16 (App Router) + React 19  |
+| Styling    | Tailwind CSS 4                      |
+| Database   | Prisma + SQLite                     |
+| Auth       | Steam OpenID + JWT (`@fastify/jwt`) |
+| Validation | Zod (shared)                        |
+| Testing    | Vitest                              |
+| Desktop    | Tauri 2                             |
 
 ## 📋 Prerequisites
 
@@ -72,14 +74,14 @@ cp .env.example .env
 
 Key variables:
 
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | SQLite path, e.g. `file:./dev.db` |
-| `JWT_SECRET` | Random secret, at least 32 characters |
-| `STEAM_API_KEY` | Your Steam Web API key |
-| `STEAM_REALM` | Public base URL of the API (e.g. `http://localhost:3001`) |
-| `FRONTEND_URL` | URL of the Next.js app (e.g. `http://localhost:3000`) |
-| `NEXT_PUBLIC_API_URL` | Same as `STEAM_REALM` — accessible from the browser |
+| Variable              | Description                                               |
+| --------------------- | --------------------------------------------------------- |
+| `DATABASE_URL`        | SQLite path, e.g. `file:./dev.db`                         |
+| `JWT_SECRET`          | Random secret, at least 32 characters                     |
+| `STEAM_API_KEY`       | Your Steam Web API key                                    |
+| `STEAM_REALM`         | Public base URL of the API (e.g. `http://localhost:3001`) |
+| `FRONTEND_URL`        | URL of the Next.js app (e.g. `http://localhost:3000`)     |
+| `NEXT_PUBLIC_API_URL` | Same as `STEAM_REALM` — accessible from the browser       |
 
 ### 3. Database Setup
 
@@ -142,32 +144,67 @@ npm run dev --workspace=apps/desktop
 npm run build --workspace=apps/desktop
 ```
 
+Linux troubleshooting (Ubuntu / .deb):
+
+- If startup logs include `DRM_IOCTL_MODE_CREATE_DUMB failed: Permission denied` or `Failed to create GBM buffer`, run the app with `WEBKIT_DISABLE_DMABUF_RENDERER=1`.
+- The desktop app now sets this fallback automatically on Linux, but you can also force it manually:
+
+```bash
+WEBKIT_DISABLE_DMABUF_RENDERER=1 steam-auction-desktop
+```
+
+- If permissions errors persist, verify the user has access to `/dev/dri/renderD*` (typically via the `render` and `video` groups), then log out/in.
+
+Steam login troubleshooting (`Could not connect to localhost: Connection refused`):
+
+- The Steam login button targets `${NEXT_PUBLIC_API_URL}/auth/steam` and defaults to `http://localhost:3001`.
+- Ensure the API server is running before login:
+
+```bash
+npm run dev --workspace=apps/api
+```
+
+- For desktop builds, set API env vars so callback and redirect targets are valid for your runtime:
+
+```bash
+STEAM_REALM="http://localhost:3001"
+FRONTEND_URL="tauri://localhost"
+```
+
+- If you run web + api in dev (without packaged desktop), use:
+
+```bash
+STEAM_REALM="http://localhost:3001"
+FRONTEND_URL="http://localhost:3000"
+NEXT_PUBLIC_API_URL="http://localhost:3001"
+```
+
 ## 🔌 API Endpoints
 
 All endpoints are served by the Fastify backend (`apps/api`) on port `3001`.
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `GET` | `/health` | – | Health check |
-| `GET` | `/auth/steam` | – | Redirect to Steam OpenID login |
-| `GET` | `/auth/steam/callback` | – | Steam callback, issues JWT |
-| `POST` | `/auth/refresh` | Cookie | Rotate refresh token, return new access token |
-| `POST` | `/auth/logout` | Cookie | Revoke session |
-| `GET` | `/me` | JWT | Get current user |
-| `GET` | `/friends` | JWT | List saved friends |
-| `POST` | `/friends` | JWT | Add a friend by Steam ID |
-| `POST` | `/friends/bulk` | JWT | Bulk import friends |
-| `DELETE` | `/friends` | JWT | Remove a friend |
-| `GET` | `/pools` | JWT | List auction pools |
-| `POST` | `/pools` | JWT | Create a pool |
-| `POST` | `/pools/:id/games` | JWT | Add a game to a pool |
-| `POST` | `/pools/:id/pick` | JWT | Pick a random game |
-| `GET` | `/pools/:id/recent-picks` | JWT | Get recently picked app IDs |
-| `GET` | `/steam/owned-games` | JWT | Fetch owned games for a Steam ID |
-| `GET` | `/steam/friends` | JWT | Fetch Steam friends list |
-| `GET` | `/steam/app-details` | – | Fetch store app details |
-| `GET` | `/leaderboard` | – | Community pick leaderboard |
-| `GET` | `/recommendations` | – | Recommendations |
+| Method   | Path                      | Auth   | Description                                   |
+| -------- | ------------------------- | ------ | --------------------------------------------- |
+| `GET`    | `/health`                 | –      | Health check                                  |
+| `GET`    | `/auth/steam`             | –      | Redirect to Steam OpenID login                |
+| `GET`    | `/auth/steam/callback`    | –      | Steam callback, issues JWT                    |
+| `POST`   | `/auth/refresh`           | Cookie | Rotate refresh token, return new access token |
+| `POST`   | `/auth/logout`            | Cookie | Revoke session                                |
+| `GET`    | `/me`                     | JWT    | Get current user                              |
+| `GET`    | `/friends`                | JWT    | List saved friends                            |
+| `POST`   | `/friends`                | JWT    | Add a friend by Steam ID                      |
+| `POST`   | `/friends/bulk`           | JWT    | Bulk import friends                           |
+| `DELETE` | `/friends`                | JWT    | Remove a friend                               |
+| `GET`    | `/pools`                  | JWT    | List auction pools                            |
+| `POST`   | `/pools`                  | JWT    | Create a pool                                 |
+| `POST`   | `/pools/:id/games`        | JWT    | Add a game to a pool                          |
+| `POST`   | `/pools/:id/pick`         | JWT    | Pick a random game                            |
+| `GET`    | `/pools/:id/recent-picks` | JWT    | Get recently picked app IDs                   |
+| `GET`    | `/steam/owned-games`      | JWT    | Fetch owned games for a Steam ID              |
+| `GET`    | `/steam/friends`          | JWT    | Fetch Steam friends list                      |
+| `GET`    | `/steam/app-details`      | –      | Fetch store app details                       |
+| `GET`    | `/leaderboard`            | –      | Community pick leaderboard                    |
+| `GET`    | `/recommendations`        | –      | Recommendations                               |
 
 ## 🗂️ Repository Structure
 
@@ -198,10 +235,9 @@ steam_auction/
 └── .env.example              # Environment variable template
 ```
 
-
 ## 📋 Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 - A Steam Web API Key ([Get one here](https://steamcommunity.com/dev/apikey))
 
@@ -269,6 +305,7 @@ npm test
 ```
 
 Tests include:
+
 - Session authentication and refresh token rotation
 - Steam API helpers
 - Pick utilities (weighted random selection)
@@ -309,17 +346,20 @@ steam_auction/
 ## 🔑 Key API Routes
 
 ### Authentication
+
 - `GET /api/auth/steam` - Initiate Steam login
 - `GET /api/auth/steam/callback` - OpenID verification callback
 - `GET /api/logout` - Logout and clear session
 - `GET /api/me` - Get current user info
 
 ### Steam Data
+
 - `GET /api/steam/owned-games?steamId=X` - Fetch owned games (requires auth)
 - `GET /api/steam/friends?steamId=X` - Fetch friends list (requires auth)
 - `GET /api/steam/app-details?appIds=X,Y,Z` - Get game details
 
 ### Pool Management
+
 - `GET /api/pools` - List user's pools (requires auth)
 - `POST /api/pools` - Create new pool (requires auth)
 - `POST /api/pools/:poolId/games` - Add game to pool (requires ownership)
@@ -327,6 +367,7 @@ steam_auction/
 - `GET /api/pools/:poolId/recent-picks` - View recent picks (requires ownership)
 
 ### Friends
+
 - `GET /api/friends` - List saved friends
 - `POST /api/friends` - Save friend
 - `DELETE /api/friends` - Remove friend
@@ -334,18 +375,21 @@ steam_auction/
 ## 🔒 Security Features
 
 ### Authentication & Authorization
+
 - ✅ All sensitive endpoints require authentication
 - ✅ Pool operations verify ownership
 - ✅ 401 for unauthenticated, 404 for unauthorized (prevents info leakage)
 - ✅ Session cookies are HTTPOnly, SameSite=lax, Secure in production
 
 ### Input Validation
+
 - ✅ All user inputs validated with Zod schemas
 - ✅ Steam IDs, App IDs, Pool data validated
 - ✅ Clear error messages without exposing internals
 - ✅ Protection against injection attacks
 
 ### Session Management
+
 - ✅ Short-lived session ID (1 hour)
 - ✅ Long-lived refresh token (30 days)
 - ✅ Automatic token rotation
@@ -358,6 +402,7 @@ steam_auction/
 **Problem**: "Steam verification failed" after login
 
 **Solutions**:
+
 - Verify `STEAM_REALM` in `.env` matches your actual URL
 - For local dev, use `http://localhost:3000` (not `127.0.0.1`)
 - Check that your Steam API key is valid
@@ -368,6 +413,7 @@ steam_auction/
 **Problem**: Can't see owned games or friends list
 
 **Solutions**:
+
 - Check that your Steam profile is **public** (not friends-only or private)
 - Go to Steam → Profile → Edit Profile → Privacy Settings
 - Set "Game details" to Public
@@ -379,6 +425,7 @@ steam_auction/
 **Problem**: Prisma errors or "Database not found"
 
 **Solutions**:
+
 ```bash
 # Reset and recreate database
 rm prisma/dev.db
@@ -394,24 +441,26 @@ npx prisma generate
 
 ## 📝 Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `DATABASE_URL` | Yes | `file:./dev.db` | SQLite database file path |
-| `STEAM_API_KEY` | Yes | - | Your Steam Web API key |
-| `STEAM_REALM` | Yes | `http://localhost:3000` | Your app's base URL |
-| `NODE_ENV` | No | `development` | Environment mode |
+| Variable        | Required | Default                 | Description               |
+| --------------- | -------- | ----------------------- | ------------------------- |
+| `DATABASE_URL`  | Yes      | `file:./dev.db`         | SQLite database file path |
+| `STEAM_API_KEY` | Yes      | -                       | Your Steam Web API key    |
+| `STEAM_REALM`   | Yes      | `http://localhost:3000` | Your app's base URL       |
+| `NODE_ENV`      | No       | `development`           | Environment mode          |
 
 ## 🚢 Deployment
 
 For production deployment:
 
 1. Update `.env`:
+
    ```env
    STEAM_REALM="https://yourdomain.com"
    NODE_ENV="production"
    ```
 
 2. Use a production database (PostgreSQL recommended):
+
    ```env
    DATABASE_URL="postgresql://user:pass@host:5432/db"
    ```
@@ -419,6 +468,7 @@ For production deployment:
 3. Update `prisma/schema.prisma` provider to `postgresql`
 
 4. Run migrations:
+
    ```bash
    npx prisma migrate deploy
    ```
@@ -432,6 +482,7 @@ For production deployment:
 ## 🤝 Contributing
 
 This is an MVP project. Key areas for enhancement:
+
 - Add E2E tests with Playwright
 - Implement rate limiting
 - Add pool sharing/multiplayer features

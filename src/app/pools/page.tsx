@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUserId } from "@/lib/session";
 
@@ -7,18 +6,53 @@ export default async function PoolsPage() {
   const userId = await getCurrentUserId();
 
   if (!userId) {
-    redirect("/dashboard");
+    return (
+      <div className="space-y-6">
+        <section className="surface rounded-2xl p-6">
+          <h1 className="font-display text-2xl text-white">Deine Pools</h1>
+          <p className="text-muted mt-2 text-sm">
+            Bitte mit Steam anmelden, um Pools zu sehen und zu verwalten.
+          </p>
+          <a
+            href="/api/auth/steam"
+            className="btn-animated mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-5 py-2.5 text-sm font-semibold text-slate-900 hover:scale-[1.02]"
+          >
+            Mit Steam anmelden
+          </a>
+        </section>
+      </div>
+    );
   }
 
-  const pools = await prisma.auctionPool.findMany({
-    where: { ownerId: userId },
-    include: {
-      friend: true,
-      games: true,
-      picks: { include: { game: true }, orderBy: { pickedAt: "desc" }, take: 1 },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  let pools: Awaited<ReturnType<typeof prisma.auctionPool.findMany>> = [];
+  try {
+    pools = await prisma.auctionPool.findMany({
+      where: { ownerId: userId },
+      include: {
+        friend: true,
+        games: true,
+        picks: { include: { game: true }, orderBy: { pickedAt: "desc" }, take: 1 },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch {
+    return (
+      <div className="space-y-6">
+        <section className="surface rounded-2xl p-6">
+          <h1 className="font-display text-2xl text-white">Deine Pools</h1>
+          <p className="text-muted mt-2 text-sm">
+            Datenbank nicht verfügbar. Bitte stelle sicher, dass die App korrekt eingerichtet ist.
+          </p>
+          <Link
+            href="/help"
+            className="btn-animated mt-4 inline-flex rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+          >
+            Hilfe & Setup
+          </Link>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">

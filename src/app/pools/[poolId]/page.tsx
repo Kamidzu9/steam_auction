@@ -9,17 +9,34 @@ export default async function PoolPage({ params }: { params: { poolId: string } 
   const userId = await getCurrentUserId();
 
   if (!userId) {
-    redirect("/dashboard");
+    redirect("/pools");
   }
 
-  const pool = await prisma.auctionPool.findFirst({
-    where: { id: poolId, ownerId: userId },
-    include: {
-      friend: true,
-      games: { include: { game: true } },
-      picks: { include: { game: true }, orderBy: { pickedAt: "desc" }, take: 5 },
-    },
-  });
+  let pool: Awaited<ReturnType<typeof prisma.auctionPool.findFirst>> | undefined;
+  try {
+    pool = await prisma.auctionPool.findFirst({
+      where: { id: poolId, ownerId: userId },
+      include: {
+        friend: true,
+        games: { include: { game: true } },
+        picks: { include: { game: true }, orderBy: { pickedAt: "desc" }, take: 5 },
+      },
+    }) ?? undefined;
+  } catch {
+    return (
+      <div className="space-y-6">
+        <section className="surface rounded-2xl p-6">
+          <Link className="text-sm text-slate-400 hover:text-white" href="/pools">
+            ← Zurück zu Pools
+          </Link>
+          <h1 className="font-display mt-3 text-2xl text-white">Datenbankfehler</h1>
+          <p className="text-muted mt-2 text-sm">
+            Datenbank nicht verfügbar. Bitte stelle sicher, dass die App korrekt eingerichtet ist.
+          </p>
+        </section>
+      </div>
+    );
+  }
 
   if (!pool) {
     notFound();
@@ -48,7 +65,7 @@ export default async function PoolPage({ params }: { params: { poolId: string } 
       {games.length === 0 ? (
         <section className="surface rounded-2xl p-5">
           <p className="text-muted text-sm">
-            Dieser Pool ist leer. Fuege Spiele im Dashboard hinzu.
+            Dieser Pool ist leer. Füge Spiele im Dashboard hinzu.
           </p>
           <Link
             href="/dashboard"

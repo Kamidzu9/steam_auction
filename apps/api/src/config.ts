@@ -1,4 +1,24 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { z } from "zod";
+
+function loadEnvFile() {
+  if (typeof process.loadEnvFile !== "function") {
+    return;
+  }
+
+  // Prefer the nearest .env to the current working directory.
+  const candidates = [".env", "../.env", "../../.env", "../../../.env"];
+  for (const candidate of candidates) {
+    const absolutePath = resolve(process.cwd(), candidate);
+    if (existsSync(absolutePath)) {
+      process.loadEnvFile(absolutePath);
+      return;
+    }
+  }
+}
+
+loadEnvFile();
 
 const envSchema = z.object({
   NODE_ENV: z

@@ -1,18 +1,44 @@
 import Image from "next/image";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { validateSessionById } from "@/lib/session";
 
-export default async function ProfilePage() {
-  const cookieStore = await cookies();
-  const sid = cookieStore.get("sid")?.value ?? null;
-  const session = sid ? await validateSessionById(sid) : null;
+type SessionUser = {
+  id: string;
+  steamId: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+};
 
-  if (!session) {
-    redirect("/dashboard");
+export default async function ProfilePage() {
+  let user: SessionUser | null = null;
+
+  try {
+    const cookieStore = await cookies();
+    const sid = cookieStore.get("sid")?.value ?? null;
+    const session = sid ? await validateSessionById(sid) : null;
+    user = session ? (session.user as SessionUser) : null;
+  } catch {
+    // DB not available — show not-logged-in state
   }
 
-  const user = (session as any).user ?? {};
+  if (!user) {
+    return (
+      <div className="space-y-6">
+        <section className="surface rounded-2xl p-6">
+          <h1 className="font-display text-2xl text-white">Profil</h1>
+          <p className="text-muted mt-2 text-sm">
+            Bitte mit Steam anmelden, um dein Profil zu sehen.
+          </p>
+          <a
+            href="/api/auth/steam"
+            className="btn-animated mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-5 py-2.5 text-sm font-semibold text-slate-900 hover:scale-[1.02]"
+          >
+            Mit Steam anmelden
+          </a>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
