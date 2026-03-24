@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --include=optional
+
+      - name: Install CSS native bindings (Linux)
+        working-directory: apps/web
+        run: npm install --no-save lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu
+
+      - name: Verify CSS native bindings
+        working-directory: apps/web
+        run: node -e "require('lightningcss'); require('@tailwindcss/oxide'); console.log('CSS native bindings loaded')"
+
+      - name: Type-check (shared)
+        run: npx tsc --noEmit --project packages/shared/tsconfig.json
+
+      - name: Type-check (api)
+        run: npx tsc --noEmit --project apps/api/tsconfig.json
+
+      - name: Type-check (api-client)
+        run: npx tsc --noEmit --project packages/api-client/tsconfig.json
+
+      - name: Test (shared)
+        run: npm test --workspace=packages/shared
+
+      - name: Test (api)
+        run: npm test --workspace=apps/api
+
+      - name: Test (api-client)
+        run: npm test --workspace=packages/api-client
+
+      - name: Test (web)
+        run: npm test --workspace=apps/web
+
+  build-api:
+    name: Build API
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --include=optional
+
+      - name: Install CSS native bindings (Linux)
+        working-directory: apps/web
+        run: npm install --no-save lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu
+
+      - name: Build shared (required by api)
+        run: npm run build --workspace=packages/shared
+
+      - name: Build api
+        run: npm run build --workspace=apps/api
+
+  build-web:
+    name: Build Web (${{ matrix.platform }})
+    needs: quality-gate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-latest
+            cssPackages: lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu
+          - platform: windows-latest
+            cssPackages: lightningcss-win32-x64-msvc @tailwindcss/oxide-win32-x64-msvc
+          - platform: macos-latest
+            cssPackages: lightningcss-darwin-arm64 @tailwindcss/oxide-darwin-arm64
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --include=optional
+
+      - name: Install CSS native bindings
+        working-directory: apps/web
+        run: npm install --no-save ${{ matrix.cssPackages }}
+
+      - name: Verify CSS native bindings
+        working-directory: apps/web
+        run: node -e "require('lightningcss'); require('@tailwindcss/oxide'); console.log('CSS native bindings loaded')"
+
+      - name: Build web
+        run: npm run build --workspace=apps/web
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:3001"

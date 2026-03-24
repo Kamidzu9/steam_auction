@@ -122,22 +122,21 @@ The CI pipeline runs on every push to `main`/`develop` and on every pull request
 
 **File:** `.github/workflows/ci.yml`
 
-### Steps
+### Jobs
 
-1. **Checkout** — fetch the repository.
-2. **Setup Node.js 20** — with npm cache enabled.
-3. **Install dependencies** — `npm ci` (clean install from lockfile).
-4. **Lint** — `next lint` for the web app.
-5. **Type-check** — `tsc --noEmit` for `packages/shared`, `apps/api`, and `packages/api-client`.
-6. **Tests** — run per workspace:
-   - `packages/shared`
-   - `apps/api`
-   - `packages/api-client`
-   - `apps/web`
+| Job | Runner | Description |
+| --- | --- | --- |
+| `quality-gate` | `ubuntu-latest` | Clean install, Linux CSS native binding verification, TypeScript checks, and all Vitest suites |
+| `build-api` | `ubuntu-latest` | Builds `packages/shared` and `apps/api` to catch compile regressions |
+| `build-web` | Matrix (`ubuntu-latest`, `windows-latest`, `macos-latest`) | Verifies platform-native CSS bindings and runs `next build` on each OS |
+
+### Why the matrix build exists
+
+Next.js 16 + Tailwind CSS 4 rely on native `lightningcss` and `@tailwindcss/oxide` binaries during `next build`. npm can skip optional native packages on CI runners, especially on Windows and macOS. The matrix build explicitly installs and verifies the correct native package from within `apps/web` before building, so the workspace-local dependency tree used by `next build` matches the native bindings that were just installed and platform-specific regressions are caught before merge.
 
 ### Failure behaviour
 
-The pipeline **fails fast** — any step failure stops the run and blocks the PR merge.
+The pipeline blocks the merge when any required job fails. The web build matrix uses `fail-fast: false` so one platform failure does not hide another.
 
 ---
 

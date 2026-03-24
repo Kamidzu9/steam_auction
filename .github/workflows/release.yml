@@ -33,10 +33,12 @@ jobs:
         run: npm ci --include=optional
 
       - name: Install CSS native bindings (Linux)
+        working-directory: apps/web
         run: npm install --no-save lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu
 
-      - name: Rebuild lightningcss native binary
-        run: npm rebuild lightningcss @tailwindcss/oxide --workspace=apps/web || true
+      - name: Verify CSS native bindings
+        working-directory: apps/web
+        run: node -e "require('lightningcss'); require('@tailwindcss/oxide'); console.log('CSS native bindings loaded')"
 
       - name: Type-check (shared)
         run: npx tsc --noEmit --project packages/shared/tsconfig.json
@@ -77,8 +79,13 @@ jobs:
       - name: Install dependencies
         run: npm ci --include=optional
 
-      - name: Rebuild lightningcss native binary
-        run: npm rebuild lightningcss @tailwindcss/oxide --workspace=apps/web || true
+      - name: Install CSS native bindings (Linux)
+        working-directory: apps/web
+        run: npm install --no-save lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu
+
+      - name: Verify CSS native bindings
+        working-directory: apps/web
+        run: node -e "require('lightningcss'); require('@tailwindcss/oxide'); console.log('CSS native bindings loaded')"
 
       - name: Build shared (required by api)
         run: npm run build --workspace=packages/shared
@@ -112,9 +119,11 @@ jobs:
         run: npm ci --include=optional
 
       - name: Install CSS native bindings (Linux)
+        working-directory: apps/web
         run: npm install --no-save lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu
 
       - name: Verify CSS native bindings
+        working-directory: apps/web
         run: node -e "require('lightningcss'); require('@tailwindcss/oxide'); console.log('CSS native bindings loaded')"
 
       - name: Build web
@@ -184,17 +193,21 @@ jobs:
 
       - name: Install lightningcss native binary (Linux)
         if: matrix.platform == 'ubuntu-22.04'
+        working-directory: apps/web
         run: npm install --no-save lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu
 
       - name: Install lightningcss native binary (Windows)
         if: matrix.platform == 'windows-latest'
+        working-directory: apps/web
         run: npm install --no-save lightningcss-win32-x64-msvc @tailwindcss/oxide-win32-x64-msvc
 
       - name: Install lightningcss native binary (macOS arm64)
         if: matrix.platform == 'macos-latest'
+        working-directory: apps/web
         run: npm install --no-save lightningcss-darwin-arm64 @tailwindcss/oxide-darwin-arm64
 
       - name: Verify CSS native bindings
+        working-directory: apps/web
         run: node -e "require('lightningcss'); require('@tailwindcss/oxide'); console.log('CSS native bindings loaded')"
 
       - name: Install Tauri CLI native binding (Linux)
