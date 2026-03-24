@@ -23,16 +23,9 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-// Mock ApiProvider — control auth state per test
-vi.mock("../lib/ApiProvider", () => ({
-  useApi: vi.fn(),
-}));
-
 import BottomNav from "../components/BottomNav";
-import { useApi } from "../lib/ApiProvider";
 import { usePathname } from "next/navigation";
 
-const mockUseApi = vi.mocked(useApi);
 const mockUsePathname = vi.mocked(usePathname);
 
 afterEach(() => {
@@ -41,26 +34,17 @@ afterEach(() => {
 });
 
 describe("BottomNav", () => {
-  it("renders nothing when accessToken is null (logged out)", () => {
-    mockUseApi.mockReturnValue({ accessToken: null, isLoading: false } as ReturnType<typeof useApi>);
+  it("always renders the navigation regardless of auth state", () => {
     const { container } = render(<BottomNav />);
-    expect(container.firstChild).toBeNull();
+    expect(container.firstChild).not.toBeNull();
   });
 
-  it("renders nothing while auth is loading", () => {
-    mockUseApi.mockReturnValue({ accessToken: null, isLoading: true } as ReturnType<typeof useApi>);
-    const { container } = render(<BottomNav />);
-    expect(container.firstChild).toBeNull();
-  });
-
-  it("renders the navigation when user is authenticated", () => {
-    mockUseApi.mockReturnValue({ accessToken: "tok", isLoading: false } as ReturnType<typeof useApi>);
+  it("renders the navigation element", () => {
     render(<BottomNav />);
     expect(screen.getByRole("navigation", { name: /primary/i })).not.toBeNull();
   });
 
-  it("renders all expected navigation links when authenticated", () => {
-    mockUseApi.mockReturnValue({ accessToken: "tok", isLoading: false } as ReturnType<typeof useApi>);
+  it("renders all expected navigation links", () => {
     render(<BottomNav />);
 
     const expectedLabels = ["Home", "Dashboard", "Pools", "Library", "Friends", "Profile"];
@@ -71,7 +55,6 @@ describe("BottomNav", () => {
 
   it("sets aria-current='page' on the active route link", () => {
     mockUsePathname.mockReturnValue("/dashboard");
-    mockUseApi.mockReturnValue({ accessToken: "tok", isLoading: false } as ReturnType<typeof useApi>);
     render(<BottomNav />);
 
     const activeLink = screen.getByText("Dashboard").closest("a");
@@ -80,7 +63,6 @@ describe("BottomNav", () => {
 
   it("does not set aria-current on inactive links", () => {
     mockUsePathname.mockReturnValue("/dashboard");
-    mockUseApi.mockReturnValue({ accessToken: "tok", isLoading: false } as ReturnType<typeof useApi>);
     render(<BottomNav />);
 
     const homeLink = screen.getByText("Home").closest("a");
@@ -89,7 +71,6 @@ describe("BottomNav", () => {
 
   it("marks /pools/* as active when on a pool detail page", () => {
     mockUsePathname.mockReturnValue("/pools/abc-123");
-    mockUseApi.mockReturnValue({ accessToken: "tok", isLoading: false } as ReturnType<typeof useApi>);
     render(<BottomNav />);
 
     const poolsLink = screen.getByText("Pools").closest("a");

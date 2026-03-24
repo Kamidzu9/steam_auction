@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useApi } from "../lib/ApiProvider";
 
 type IconProps = { className?: string };
 
@@ -78,10 +77,6 @@ const NAV_ITEMS = [
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { accessToken, isLoading } = useApi();
-
-  // Do not render the bottom nav while auth is being resolved or when logged out.
-  if (isLoading || !accessToken) return null;
 
   return (
     <nav
