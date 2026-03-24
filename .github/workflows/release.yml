@@ -235,21 +235,17 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            (async () => {
-              const core = require('@actions/core');
-              const github = require('@actions/github');
-              const eventName = github.context.eventName;
-              const ref = github.context.ref || '';
-              let tag = '';
-              if (eventName === 'workflow_dispatch') {
-                tag = (github.context.payload && github.context.payload.inputs && github.context.payload.inputs.version) || '';
-              } else {
-                if (ref.startsWith('refs/tags/')) tag = ref.replace('refs/tags/', '');
-                else if (ref.startsWith('refs/heads/')) tag = ref.replace('refs/heads/', '');
-                else tag = github.context.ref_name || '';
-              }
-              core.setOutput('tag', tag);
-            })();
+            const eventName = context.eventName;
+            const ref = context.ref || '';
+            let tag = '';
+            if (eventName === 'workflow_dispatch') {
+              tag = (context.payload && context.payload.inputs && context.payload.inputs.version) || '';
+            } else {
+              if (ref.startsWith('refs/tags/')) tag = ref.replace('refs/tags/', '');
+              else if (ref.startsWith('refs/heads/')) tag = ref.replace('refs/heads/', '');
+              else tag = context.ref_name || '';
+            }
+            core.setOutput('tag', tag);
 
       - name: Check if tag exists
         id: check-tag
@@ -257,20 +253,19 @@ jobs:
         with:
           tag: ${{ steps.set-tag.outputs.tag }}
           script: |
-            (async () => {
-              const core = require('@actions/core');
-              const github = require('@actions/github');
-              const tag = core.getInput('tag');
-              if (!tag) { core.setOutput('exists', 'false'); return; }
-              const owner = github.context.repo.owner;
-              const repo = github.context.repo.repo;
-              try {
-                await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` });
-                core.setOutput('exists', 'true');
-              } catch (e) {
-                core.setOutput('exists', 'false');
-              }
-            })();
+            const tag = core.getInput('tag');
+            if (!tag) {
+              core.setOutput('exists', 'false');
+              return;
+            }
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            try {
+              await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` });
+              core.setOutput('exists', 'true');
+            } catch (e) {
+              core.setOutput('exists', 'false');
+            }
 
       - name: Build desktop (create release)
         if: steps.check-tag.outputs.exists == 'false'
