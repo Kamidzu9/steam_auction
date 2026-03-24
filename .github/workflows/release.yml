@@ -10,8 +10,6 @@ on:
   push:
     tags:
       - "v*.*.*-*" # matches pre-release tags like v0.2.0-beta.1
-    branches:
-      - main
 
 permissions:
   contents: write
@@ -32,7 +30,7 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=optional
 
       - name: Rebuild lightningcss native binary
         run: npm rebuild lightningcss --workspace=apps/web || true
@@ -169,7 +167,7 @@ jobs:
           workspaces: "./apps/desktop/src-tauri -> target"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=optional
 
       - name: Install lightningcss native binary (Linux)
         if: matrix.platform == 'ubuntu-22.04'
@@ -182,6 +180,21 @@ jobs:
       - name: Install lightningcss native binary (macOS arm64)
         if: matrix.platform == 'macos-latest'
         run: npm install --no-save lightningcss-darwin-arm64 @tailwindcss/oxide-darwin-arm64
+
+      - name: Install Tauri CLI native binding (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: npm install --no-save @tauri-apps/cli-linux-x64-gnu
+
+      - name: Install Tauri CLI native binding (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: npm install --no-save @tauri-apps/cli-win32-x64-msvc
+
+      - name: Install Tauri CLI native binding (macOS arm64)
+        if: matrix.platform == 'macos-latest'
+        run: npm install --no-save @tauri-apps/cli-darwin-arm64
+
+      - name: Verify Tauri CLI native binding
+        run: node -e "require('@tauri-apps/cli'); console.log('Tauri CLI native binding loaded')"
 
       - name: Build web (required by Tauri)
         run: npm run build --workspace=apps/web
