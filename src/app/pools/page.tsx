@@ -55,60 +55,49 @@ export default async function PoolsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="surface rounded-2xl p-6">
+    <div className="space-y-5">
+      <section className="surface rounded-2xl p-5">
         <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl text-white">Deine Pools</h1>
-            <p className="text-muted mt-1 text-sm">
-              Verwalte deine Auction Pools und starte Picks.
-            </p>
-          </div>
+          <h1 className="font-display text-xl text-white">Deine Pools</h1>
           <Link
             href="/dashboard"
-            className="btn-animated shrink-0 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-sm text-white hover:border-white/40"
+            className="btn-animated text-xs text-slate-400 hover:text-white"
           >
-            + Neuer Pool
+            + Neuen Pool erstellen
           </Link>
         </div>
       </section>
 
-      <section className="surface rounded-2xl p-6">
+      <section className="surface rounded-2xl p-5">
         {pools.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-muted text-sm">
-              Noch keine Pools vorhanden. Erstelle deinen ersten Pool im Dashboard.
+            <p className="text-muted text-sm mb-4">
+              Noch keine Pools vorhanden.
             </p>
             <Link
               href="/dashboard"
-              className="btn-animated mt-4 inline-flex rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+              className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 hover:scale-[1.02]"
             >
-              Zum Dashboard
+              Ersten Pool erstellen
             </Link>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             {pools.map((pool) => (
               <Link
                 key={pool.id}
                 href={`/pools/${pool.id}`}
-                className="card-animated min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4 text-left text-sm text-slate-200 hover:border-white/30 transition-colors"
+                className="card-animated min-w-0 rounded-2xl border border-white/10 bg-black/20 p-4 hover:border-white/25 transition-all"
               >
                 <div className="font-display text-base text-white break-words">{pool.name}</div>
-                <div className="mt-2 text-xs text-slate-400 truncate">
-                  Freund: {pool.friend?.displayName ?? pool.friend?.steamId ?? "Unbekannt"}
+                <div className="mt-1.5 text-xs text-slate-400 truncate">
+                  mit {pool.friend?.displayName ?? pool.friend?.steamId ?? "Unbekannt"}
                 </div>
-                <div className="mt-1 text-xs text-slate-500">
-                  Spiele: {pool.games.length}
+                <div className="mt-3 flex items-center gap-4 text-xs text-slate-500">
+                  <span>{pool.games.length} Spiele</span>
+                  <span>·</span>
+                  <span>Letzter Pick: {pool.picks[0]?.game?.name ?? "Noch keiner"}</span>
                 </div>
-                <div className="mt-1 text-xs text-slate-500">
-                  Erstellt: {new Date(pool.createdAt).toLocaleDateString("de-DE")}
-                </div>
-                {pool.picks[0]?.game && (
-                  <div className="mt-1 text-xs text-slate-500">
-                    Letzter Pick: {pool.picks[0].game.name}
-                  </div>
-                )}
               </Link>
             ))}
           </div>
