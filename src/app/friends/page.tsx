@@ -129,10 +129,16 @@ export default function FriendsPage() {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <h1 className="font-display text-2xl text-white">Friends</h1>
+          <h1 className="font-display text-2xl text-white">Freunde</h1>
           <p className="text-muted mt-2 text-sm">
-            You need to be logged in to view your friends.
+            Du musst angemeldet sein, um deine Freundesliste zu sehen.
           </p>
+          <a
+            href="/api/auth/steam"
+            className="btn-animated mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-[0_8px_20px_rgba(245,158,11,0.2)] hover:scale-[1.02]"
+          >
+            Mit Steam verbinden
+          </a>
         </section>
       </div>
     );
@@ -142,61 +148,59 @@ export default function FriendsPage() {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <h1 className="font-display text-2xl text-white">Friends</h1>
-          <p className="text-muted mt-2 text-sm">
-            Your Steam friends list.
-          </p>
-        </section>
-        <section className="surface rounded-2xl p-6">
-          <div className="text-center py-8">
-            <p className="text-red-400 text-sm mb-4">Error loading friends: {errorMessage}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="btn-animated rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
-            >
-              Retry
-            </button>
-          </div>
+          <h1 className="font-display text-2xl text-white">Freunde</h1>
+          <p className="text-muted mt-2 text-sm">Deine Steam-Freundesliste.</p>
+          <p className="mt-4 text-sm text-rose-300">{errorMessage}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-animated mt-3 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+          >
+            Erneut versuchen
+          </button>
         </section>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <section className="surface rounded-2xl p-6">
-        <h1 className="font-display text-2xl text-white">Friends</h1>
-        <p className="text-muted mt-2 text-sm">
-          Your Steam friends. {user?.displayName && `Playing as ${user.displayName}.`}
-        </p>
-        {friends.length > 0 && (
-          <p className="text-muted mt-1 text-xs">
-            {friends.length} friend{friends.length !== 1 ? "s" : ""} found
-          </p>
-        )}
-        <Link
-          href="/dashboard"
-          className="btn-animated mt-4 inline-flex rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
-        >
-          Create Pool with Friends
-        </Link>
+    <div className="space-y-5">
+      <section className="surface rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="font-display text-xl text-white">Freunde</h1>
+            {user?.displayName && (
+              <p className="text-muted mt-1 text-sm">Angemeldet als {user.displayName}</p>
+            )}
+          </div>
+          {friends.length > 0 && (
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400">
+              {friends.length} Freunde
+            </span>
+          )}
+        </div>
       </section>
 
-      <section className="surface rounded-2xl p-6">
+      <section className="surface rounded-2xl p-5">
         {friends.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="py-6 text-center">
             <p className="text-muted text-sm">
-              No friends found. Make sure your Steam friends list is public.
+              Keine Freunde gefunden. Stelle sicher, dass deine Steam-Freundesliste oeffentlich ist.
             </p>
+            <Link
+              href="/dashboard"
+              className="btn-animated mt-4 inline-flex rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+            >
+              Freunde im Dashboard laden
+            </Link>
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {friends.map((friend) => {
               const profile = profilesMap.get(friend.steamid);
               return (
                 <div
                   key={friend.steamid}
-                  className="card-animated min-w-0 rounded-2xl border border-white/10 bg-black/30 p-4"
+                  className="card-animated min-w-0 rounded-2xl border border-white/10 bg-black/20 p-4"
                 >
                   <div className="flex items-center gap-3">
                     {profile?.avatarfull && (
@@ -204,8 +208,8 @@ export default function FriendsPage() {
                         <Image
                           src={profile.avatarfull}
                           alt={profile.personaname}
-                          width={48}
-                          height={48}
+                          width={40}
+                          height={40}
                           className="rounded-full"
                           unoptimized
                         />
@@ -215,17 +219,14 @@ export default function FriendsPage() {
                       <h3 className="font-display text-sm text-white truncate">
                         {profile?.personaname ?? friend.steamid}
                       </h3>
-                      <p className="text-xs text-slate-400 truncate">
-                        {friend.steamid}
-                      </p>
                       {profile?.profileurl && (
                         <a
                           href={profile.profileurl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                          className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
                         >
-                          View Profile →
+                          Profil ansehen →
                         </a>
                       )}
                     </div>

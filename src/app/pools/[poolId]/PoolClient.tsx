@@ -145,63 +145,46 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
   }
 
   return (
-    <div className="space-y-6">
-      <section className="surface rounded-2xl p-6">
-        <div className="flex flex-wrap items-center gap-4">
+    <div className="space-y-5">
+      <section className="surface rounded-2xl p-5">
+        <div className="flex flex-wrap items-center gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-300">Modus:</label>
+            <label className="text-xs text-slate-400">Modus</label>
             <select
-              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white disabled:opacity-60"
               value={pickMode}
               onChange={(e) => setPickMode(e.target.value as "pure" | "avoid")}
               disabled={isSpinBusy}
             >
-              <option value="pure">Zufall (pure)</option>
-              <option value="avoid">Avoid repeats</option>
+              <option value="pure">Zufall</option>
+              <option value="avoid">Wiederholungen vermeiden</option>
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-300">Avoid:</label>
-            <input
-              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
-              type="number"
-              min={1}
-              step={1}
-              value={avoidCount}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                setAvoidCount((prev) =>
-                  Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev
-                );
-              }}
-              disabled={pickMode !== "avoid" || isSpinBusy}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-300">Spin (s):</label>
-            <input
-              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
-              type="number"
-              step={0.1}
-              min={1}
-              value={spinSeconds}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                setSpinSeconds((prev) => {
-                  if (!Number.isFinite(next)) return prev;
-                  return Math.min(12, Math.max(1, next));
-                });
-              }}
-              disabled={isSpinBusy}
-            />
-          </div>
+          {pickMode === "avoid" && (
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-slate-400">Letzte</label>
+              <input
+                className="w-16 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white disabled:opacity-60"
+                type="number"
+                min={1}
+                step={1}
+                value={avoidCount}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  setAvoidCount((prev) =>
+                    Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev
+                  );
+                }}
+                disabled={isSpinBusy}
+              />
+            </div>
+          )}
         </div>
 
         <div
           id="wheel"
-          className={`mt-6 flex items-center justify-center ${spinState === "preparing" ? "animate-pulse" : ""}`}
+          className={`flex items-center justify-center ${spinState === "preparing" ? "animate-pulse" : ""}`}
         >
           <AuctionWheel
             ref={wheelRef}
@@ -216,12 +199,12 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
           />
         </div>
 
-        {status ? <p className="mt-3 text-sm text-slate-200">{status}</p> : null}
-        {error ? <p className="mt-3 text-sm text-rose-200">{error}</p> : null}
+        {status && <p className="mt-3 text-sm text-slate-200">{status}</p>}
+        {error && <p className="mt-3 text-sm text-rose-200">{error}</p>}
 
-        {isSpinBusy || pickResult ? (
+        {(isSpinBusy || pickResult) && (
           <div
-            className={`mt-4 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-200 transition ${
+            className={`mt-4 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 transition ${
               pickPulse ? "animate-reveal-pick animate-pulse-once" : ""
             }`}
           >
@@ -244,14 +227,14 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
                     }}
                   />
                   <div className="min-w-0">
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
-                    <div className="text-lg font-semibold leading-tight break-words">
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Spinning…</div>
+                    <div className="text-lg font-semibold leading-tight break-words text-white">
                       {spinningItem.name}
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-slate-300">Wheel dreht...</div>
+                <div className="text-sm text-slate-300">Wheel dreht…</div>
               )
             ) : (
               <div className="flex items-center gap-3">
@@ -273,13 +256,13 @@ export default function PoolClient({ poolId, games }: { poolId: string; games: P
                   />
                 ) : null}
                 <div className="min-w-0">
-                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
-                  <div className="text-lg font-semibold leading-tight break-words">{pickResult}</div>
+                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Heutiges Spiel</div>
+                  <div className="text-lg font-semibold leading-tight break-words text-white">{pickResult}</div>
                 </div>
               </div>
             )}
           </div>
-        ) : null}
+        )}
       </section>
     </div>
   );

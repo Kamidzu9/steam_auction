@@ -124,6 +124,15 @@ function IconArrowRight({ className }: IconProps) {
   );
 }
 
+function IconUser({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+      <circle cx="12" cy="7.5" r="3.4" />
+      <path d="M4.5 19c1.8-3.3 5-5 7.5-5s5.7 1.7 7.5 5" />
+    </svg>
+  );
+}
+
 export default function DashboardClient() {
   const searchParams = useSearchParams();
   const loginFailed = searchParams?.get("login") === "failed";
@@ -660,161 +669,179 @@ export default function DashboardClient() {
     void refreshRecentAvoid();
   }, [refreshRecentAvoid]);
 
+  // ── Loading ────────────────────────────────────────────────────────────────
+  if (!authReady) {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <div className="surface rounded-2xl p-6 animate-pulse">
+          <div className="h-5 w-40 bg-white/10 rounded mb-3" />
+          <div className="h-4 w-full bg-white/10 rounded mb-2" />
+          <div className="h-4 w-2/3 bg-white/10 rounded mb-5" />
+          <div className="h-10 w-44 bg-white/10 rounded-full" />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Not logged in ───────────────────────────────────────────────────────────
+  if (!isLoggedIn) {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <section className="surface rounded-2xl p-6">
+          <h1 className="font-display text-2xl text-white">Willkommen</h1>
+          <p className="text-muted mt-2 text-sm">
+            Verbinde dein Steam-Konto, um deine Spiele zu laden und mit Freunden zu vergleichen.
+          </p>
+          {loginFailed && (
+            <div className="mt-4 rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+              Steam Login fehlgeschlagen. Bitte pruefe deine Steam-Session.
+            </div>
+          )}
+          <div className="mt-6">
+            <a
+              id="btn-steam-login"
+              className="btn-animated inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-6 py-3 text-sm font-semibold text-slate-900 shadow-[0_12px_30px_rgba(245,158,11,0.25)] hover:scale-[1.02]"
+              href="/api/auth/steam"
+            >
+              <IconLink className="h-4 w-4" />
+              Mit Steam verbinden
+            </a>
+          </div>
+        </section>
+
+        <section className="surface rounded-2xl p-6">
+          <h2 className="font-display text-base text-white">So funktioniert&apos;s</h2>
+          <ol className="mt-4 space-y-3">
+            {[
+              "Steam verbinden und Spielebibliothek laden.",
+              "Freund auswaehlen und gemeinsame Spiele berechnen.",
+              "Pool erstellen und per Auktion ein Spiel ausloesen.",
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-3 text-sm text-slate-300">
+                <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-slate-200">
+                  {i + 1}
+                </span>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
+    );
+  }
+
+  // ── Logged in ───────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-8 animate-fade-in">
-      <section className="surface rounded-2xl p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
+    <div className="space-y-5 animate-fade-in">
+      {/* User header */}
+      <section className="surface rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             {user?.avatarUrl ? (
               <Image
                 src={user.avatarUrl}
                 alt={user.displayName ?? "Steam avatar"}
-                width={48}
-                height={48}
-                className="h-12 w-12 rounded-full object-cover"
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-full object-cover"
               />
             ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xs text-slate-400">
-                Steam
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xs text-slate-400">
+                <IconUser className="h-5 w-5" />
               </div>
             )}
             <div>
-              <h2 className="font-display text-lg text-white">Status & Login</h2>
-              <p className="text-muted mt-1 text-sm">
-                {!authReady
-                  ? "Session wird geladen..."
-                  : isLoggedIn
-                    ? `Eingeloggt als ${user?.displayName ?? user?.steamId}`
-                    : "Nicht eingeloggt. Verbinde Steam, um Spiele zu laden."}
-              </p>
+              <p className="text-sm font-medium text-white">{user?.displayName ?? user?.steamId}</p>
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-2 py-0.5 text-xs text-emerald-200">
+                Steam verbunden
+              </span>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {!authReady ? (
-              <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs text-slate-300">
-                Session wird geladen...
+          <button
+            className="btn-animated rounded-full border border-white/20 px-3 py-1.5 text-xs text-slate-300 hover:border-white/40 hover:text-white disabled:opacity-60"
+            onClick={logout}
+            disabled={isLoggingOut}
+          >
+            Logout
+          </button>
+        </div>
+        {loginFailed && (
+          <div className="mt-4 rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+            Steam Login fehlgeschlagen. Bitte pruefe deine Steam-Session.
+          </div>
+        )}
+        {status && <p className="mt-3 text-sm text-slate-200 animate-slide-up">{status}</p>}
+        {error && <p className="mt-3 text-sm text-rose-200 animate-slide-up">{error}</p>}
+      </section>
+
+      {/* Step 1 – Load your games */}
+      <section className="surface rounded-2xl p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${hasMyGames ? "bg-emerald-400/20 text-emerald-200" : "bg-white/10 text-slate-200"}`}>
+                {hasMyGames ? "✓" : "1"}
               </span>
-            ) : !isLoggedIn ? (
-              <a
-                id="btn-steam-login"
-                className="btn-animated inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-[0_12px_30px_rgba(245,158,11,0.25)] hover:scale-[1.02]"
-                href="/api/auth/steam"
-              >
-                <IconLink className="h-4 w-4" />
-                Mit Steam verbinden
-              </a>
+              <h2 className="font-display text-base text-white">Deine Spielebibliothek</h2>
+            </div>
+            {hasMyGames ? (
+              <p className="mt-1 text-sm text-muted pl-8">{myGames.length} Spiele geladen</p>
             ) : (
-              <>
-                <span className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-200">
-                  Verbunden
-                </span>
-                <button
-                  className="btn-animated rounded-full border border-white/20 px-3 py-1 text-xs text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
-                  onClick={logout}
-                  disabled={isLoggingOut}
-                >
-                  Logout
-                </button>
-              </>
+              <p className="mt-1 text-sm text-muted pl-8">
+                Lade deine Steam-Bibliothek, um gemeinsame Spiele zu finden.
+              </p>
             )}
           </div>
-        </div>
-
-        {loginFailed ? (
-          <div className="mt-4 rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
-            Steam Login fehlgeschlagen. Bitte pruefe deine Steam-Session oder die STEAM_REALM URL.
-          </div>
-        ) : null}
-
-        {status ? <p className="mt-3 text-sm text-slate-200 animate-slide-up">{status}</p> : null}
-        {error ? <p className="mt-3 text-sm text-rose-200 animate-slide-up">{error}</p> : null}
-        <div className="mt-4 grid gap-2 text-sm text-slate-400 md:grid-cols-3 animate-slide-up">
-          <span>Meine Spiele: {myGames.length}</span>
-          <span>Freund-Spiele: {friendGames.length}</span>
-          <span>Gemeinsam: {intersection.length}</span>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-3">
           <button
             id="btn-load-games"
-            className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-animated flex-shrink-0 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             onClick={fetchMyGames}
             disabled={!canUseSteam}
           >
             <IconRefresh className="h-4 w-4" />
-            Meine Spiele laden
+            {hasMyGames ? "Aktualisieren" : "Laden"}
           </button>
-          {canUseSteam ? (
-            <Link
-              className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
-              href="/pools"
-            >
-              <IconStack className="h-4 w-4" />
-              Pools ansehen
-            </Link>
-          ) : (
-            <span className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-slate-400 opacity-60">
-              <IconStack className="h-4 w-4" />
-              Pools ansehen
-            </span>
-          )}
         </div>
       </section>
 
-      <section className="surface rounded-2xl p-6 card-animated animate-pop">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="font-display text-lg text-white">Freunde</h2>
-            <p className="text-muted mt-2 text-sm">
-              Lade deine Steam-Freunde oder fuege eine SteamID manuell hinzu.
-            </p>
-          </div>
-          <button
-            id="btn-load-friends"
-            className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={fetchFriendList}
-            disabled={!canUseSteam}
-          >
-            <IconUsers className="h-4 w-4" />
-            Steam-Freunde laden
-          </button>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-3">
-          <input
-            className="w-full max-w-xs rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white disabled:opacity-60"
-            placeholder="Friend SteamID"
-            value={friendSteamId}
-            onChange={(event) => setFriendSteamId(event.target.value)}
-            disabled={!canUseSteam}
-          />
-          <button
-            className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={addFriend}
-            disabled={!canUseSteam || friendSteamId.trim().length === 0}
-          >
-            <IconPlus className="h-4 w-4" />
-            Freund speichern
-          </button>
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <input
-              placeholder="Freund suchen..."
-              value={friendFilter}
-              onChange={(e) => setFriendFilter(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-            />
-            <div
-              id="friends-list"
-              className="mt-2 h-44 overflow-auto rounded-lg border border-white/10 bg-black/30 p-2"
+      {/* Step 2 – Select friends */}
+      {hasMyGames && (
+        <section className="surface rounded-2xl p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className={`flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${hasFriendSelection ? "bg-emerald-400/20 text-emerald-200" : "bg-white/10 text-slate-200"}`}>
+                {hasFriendSelection ? "✓" : "2"}
+              </span>
+              <h2 className="font-display text-base text-white">Freund auswaehlen</h2>
+            </div>
+            <button
+              id="btn-load-friends"
+              className="btn-animated flex-shrink-0 inline-flex items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 text-sm text-white hover:border-white/40 disabled:opacity-60"
+              onClick={fetchFriendList}
+              disabled={!canUseSteam}
             >
-              {friends.length === 0 ? (
-                <div className="text-sm text-muted p-2">
-                  Noch keine gespeicherten Freunde. Lade Steam-Freunde oder fuege eine ID hinzu.
-                </div>
-              ) : (
-                friends
+              <IconUsers className="h-4 w-4" />
+              Steam-Freunde laden
+            </button>
+          </div>
+
+          {friends.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-4 text-sm text-muted">
+              Noch keine Freunde gespeichert. Lade deine Steam-Freundesliste oder fuege eine SteamID manuell hinzu.
+            </div>
+          ) : (
+            <div className="mt-4">
+              <input
+                placeholder="Freund suchen..."
+                value={friendFilter}
+                onChange={(e) => setFriendFilter(e.target.value)}
+                className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+              />
+              <div
+                id="friends-list"
+                className="mt-2 max-h-52 overflow-auto rounded-lg border border-white/10 bg-black/20 p-2"
+              >
+                {friends
                   .filter((f) => {
                     if (!friendFilter) return true;
                     const needle = friendFilter.toLowerCase();
@@ -826,9 +853,9 @@ export default function DashboardClient() {
                   .map((friend) => (
                     <div
                       key={friend.id}
-                      className="flex min-w-0 items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-white/5"
+                      className="flex min-w-0 items-center justify-between gap-3 rounded-lg px-2 py-1.5 hover:bg-white/5"
                     >
-                      <label className="flex min-w-0 items-center gap-3">
+                      <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                         <input
                           type="checkbox"
                           checked={selectedFriendIds.includes(friend.id)}
@@ -841,12 +868,12 @@ export default function DashboardClient() {
                           }
                           className="h-4 w-4"
                         />
-                        <div className="truncate text-sm text-slate-200">
+                        <span className="truncate text-sm text-slate-200">
                           {friend.displayName ?? friend.steamId}
-                        </div>
+                        </span>
                       </label>
                       <button
-                        className="flex-shrink-0 text-xs text-rose-300 hover:text-rose-200"
+                        className="flex-shrink-0 text-xs text-rose-400/70 hover:text-rose-300"
                         onClick={() => void deleteFriend(friend.id)}
                         aria-label="Delete friend"
                         title="Delete friend"
@@ -854,275 +881,274 @@ export default function DashboardClient() {
                         Entfernen
                       </button>
                     </div>
-                  ))
-              )}
+                  ))}
+              </div>
+              <div className="mt-2 flex gap-2 text-xs">
+                <button
+                  className="text-slate-400 hover:text-white disabled:opacity-40"
+                  onClick={() => setSelectedFriendIds(friends.map((f) => f.id))}
+                  disabled={friends.length === 0}
+                >
+                  Alle waehlen
+                </button>
+                <span className="text-slate-600">·</span>
+                <button
+                  className="text-slate-400 hover:text-white disabled:opacity-40"
+                  onClick={() => setSelectedFriendIds([])}
+                  disabled={selectedFriendIds.length === 0}
+                >
+                  Auswahl loeschen
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2">
-              <button
-                className="btn-animated rounded-full border border-white/20 px-3 py-1 text-sm text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={() => setSelectedFriendIds(friends.map((f) => f.id))}
-                disabled={!canUseSteam || friends.length === 0}
-              >
-                Alle waehlen
-              </button>
-              <button
-                className="btn-animated rounded-full border border-white/20 px-3 py-1 text-sm text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={() => setSelectedFriendIds([])}
-                disabled={!canUseSteam || selectedFriendIds.length === 0}
-              >
-                Auswahl loeschen
-              </button>
+          <div className="mt-4 border-t border-white/10 pt-4 flex flex-wrap items-center gap-3">
+            <input
+              className="flex-1 min-w-[200px] rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+              placeholder="SteamID manuell hinzufuegen"
+              value={friendSteamId}
+              onChange={(event) => setFriendSteamId(event.target.value)}
+            />
+            <button
+              className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40 disabled:opacity-60"
+              onClick={addFriend}
+              disabled={!canUseSteam || friendSteamId.trim().length === 0}
+            >
+              <IconPlus className="h-4 w-4" />
+              Hinzufuegen
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Step 3 – Load shared games */}
+      {hasFriendSelection && (
+        <section className="surface rounded-2xl p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className={`flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${intersection.length > 0 ? "bg-emerald-400/20 text-emerald-200" : "bg-white/10 text-slate-200"}`}>
+                {intersection.length > 0 ? "✓" : "3"}
+              </span>
+              <h2 className="font-display text-base text-white">Gemeinsame Spiele</h2>
             </div>
             <button
               id="btn-load-shared"
-              className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
+              className="btn-animated flex-shrink-0 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02] disabled:opacity-60"
               onClick={() => void fetchSelectedFriendsGames()}
               disabled={!canLoadShared}
             >
               <IconIntersect className="h-4 w-4" />
-              Gemeinsame Spiele laden
-            </button>
-            <p className="text-xs text-muted">
-              Tipp: Waehle zuerst Freunde aus, um die Intersection zu berechnen.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="surface rounded-2xl p-6 card-animated animate-pop">
-        <h2 className="font-display text-lg text-white">Gemeinsame Spiele</h2>
-        <p className="text-muted mt-2 text-sm">Gefundene Intersection: {intersection.length}</p>
-        <div className="mt-3">
-          <label className="text-sm text-slate-300">Filter nach Tags:</label>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              className="btn-animated rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-sm text-emerald-200 hover:border-emerald-300"
-              onClick={() => toggleTagPreset(["coop", "online co-op", "local co-op"])}
-              type="button"
-            >
-              Co-op
-            </button>
-            <button
-              className="btn-animated rounded-full border border-white/20 px-3 py-1 text-sm text-white hover:border-white/40"
-              onClick={() => toggleTagPreset(["multiplayer"])}
-              type="button"
-            >
-              Zusammen spielen
+              {intersection.length > 0 ? "Neu laden" : "Berechnen"}
             </button>
           </div>
-        </div>
 
-        {previewGames.length > 0 ? (
-          <div className="mt-4 grid gap-2 md:grid-cols-2">
-            {previewGames.map((game) => (
-              <div
-                key={game.appid}
-                className="flex min-w-0 items-center justify-between rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200"
-              >
-                <span className="min-w-0 flex-1 truncate">{game.name}</span>
-                <span className="ml-3 flex-shrink-0 text-xs text-slate-400">#{game.appid}</span>
+          {intersection.length > 0 ? (
+            <>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  className={`btn-animated rounded-full px-3 py-1 text-sm transition ${
+                    selectedTags.join("|") === ["coop", "online co-op", "local co-op"].join("|")
+                      ? "border border-emerald-400/60 bg-emerald-400/15 text-emerald-200"
+                      : "border border-white/20 text-slate-300 hover:border-white/40"
+                  }`}
+                  onClick={() => toggleTagPreset(["coop", "online co-op", "local co-op"])}
+                  type="button"
+                >
+                  Co-op ({filteredIntersection.length > 0 && selectedTags.length > 0 ? filteredIntersection.length : "alle"})
+                </button>
+                <button
+                  className={`btn-animated rounded-full px-3 py-1 text-sm transition ${
+                    selectedTags.join("|") === ["multiplayer"].join("|")
+                      ? "border border-emerald-400/60 bg-emerald-400/15 text-emerald-200"
+                      : "border border-white/20 text-slate-300 hover:border-white/40"
+                  }`}
+                  onClick={() => toggleTagPreset(["multiplayer"])}
+                  type="button"
+                >
+                  Multiplayer
+                </button>
+                {selectedTags.length > 0 && (
+                  <button
+                    className="text-xs text-slate-400 hover:text-white"
+                    onClick={() => setSelectedTags([])}
+                    type="button"
+                  >
+                    Filter loeschen
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-muted mt-4 text-sm">
-            Keine passenden Spiele gefunden. Pruefe deine Auswahl oder lade die Spiele neu.
-          </p>
-        )}
-      </section>
-
-      <section className="surface rounded-2xl p-6 card-animated animate-pop">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 className="font-display text-lg text-white">Pool & Pick</h2>
-            <p className="text-muted mt-2 text-sm">
-              Erstelle einen Pool, speichere die gemeinsamen Spiele und lasse die Auktion entscheiden.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              id="btn-create-pool"
-              className="btn-animated inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={() => void createPool()}
-              disabled={!canCreatePool}
-            >
-              <IconStack className="h-4 w-4" />
-              Pool erstellen
-            </button>
-            <button
-              id="btn-add-shared"
-              className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={() => void addIntersectionToPool()}
-              disabled={!canAddToPool}
-            >
-              <IconPlus className="h-4 w-4" />
-              Spiele hinzufuegen
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-300">Modus:</label>
-            <select
-              className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
-              value={pickMode}
-              onChange={(e) => setPickMode(e.target.value as "pure" | "avoid")}
-              disabled={!canUseSteam || isSpinBusy}
-            >
-              <option value="pure">Zufall (pure)</option>
-              <option value="avoid">Avoid repeats</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-300">Avoid:</label>
-            <input
-              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
-              type="number"
-              min={1}
-              step={1}
-              value={avoidCount}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                setAvoidCount((prev) =>
-                  Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev
-                );
-              }}
-              disabled={pickMode !== "avoid" || !canUseSteam || isSpinBusy}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-300">Spin (s):</label>
-            <input
-              className="w-20 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
-              type="number"
-              step={0.1}
-              min={1}
-              value={spinSeconds}
-              onChange={(e) => {
-                const next = Number(e.target.value);
-                setSpinSeconds((prev) => {
-                  if (!Number.isFinite(next)) return prev;
-                  return Math.min(12, Math.max(1, next));
-                });
-              }}
-              disabled={!canUseSteam || isSpinBusy}
-            />
-          </div>
-        </div>
-
-        <div
-          id="wheel"
-          className={`mt-6 flex items-center justify-center ${spinState === "preparing" ? "animate-pulse" : ""}`}
-        >
-          <AuctionWheel
-            ref={wheelRef}
-            items={wheelItems.map((g) => ({ appid: g.appid, name: g.name }))}
-            onCenterClick={() => void pickGame()}
-            disabled={!canPick}
-            disabledReason={pickDisabledReason}
-            allowDrag={false}
-            onActiveItemChange={(item) =>
-              setActiveWheelItem(item ? { appid: item.appid, name: item.name } : null)
-            }
-          />
-        </div>
-
-        {isSpinBusy || pickResult ? (
-          <div
-            className={`mt-4 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-slate-200 transition ${
-              pickPulse ? "animate-reveal-pick animate-pulse-once" : ""
-            }`}
-          >
-            {isSpinBusy ? (
-              spinningItem ? (
-                <div className="flex items-center gap-3">
-                  <Image
-                    src={`https://cdn.akamai.steamstatic.com/steam/apps/${spinningItem.appid}/header.jpg`}
-                    alt={spinningItem.name}
-                    width={460}
-                    height={215}
-                    unoptimized
-                    className="h-16 w-28 rounded-md object-cover shadow-md"
-                    sizes="(max-width: 768px) 112px, 112px"
-                    onError={(e) => {
-                      const t = e.currentTarget as HTMLImageElement;
-                      if (!t.src.includes("/icons/icon-192.svg")) {
-                        t.src = "/icons/icon-192.svg";
-                      }
-                    }}
-                  />
-                  <div className="min-w-0">
-                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
-                    <div className="text-lg font-semibold leading-tight break-words">
-                      {spinningItem.name}
-                    </div>
+              <p className="mt-2 text-xs text-muted">
+                {filteredIntersection.length} von {intersection.length} gemeinsamen Spielen
+              </p>
+              <div className="mt-3 grid gap-1.5 md:grid-cols-2">
+                {previewGames.map((game) => (
+                  <div
+                    key={game.appid}
+                    className="flex min-w-0 items-center rounded-xl border border-white/10 bg-black/20 px-3 py-1.5 text-sm text-slate-200"
+                  >
+                    <span className="min-w-0 flex-1 truncate">{game.name}</span>
                   </div>
-                </div>
-              ) : (
-                <div className="text-sm text-slate-300">Wheel dreht...</div>
-              )
+                ))}
+                {filteredIntersection.length > 12 && (
+                  <p className="col-span-full text-xs text-slate-500 px-1">+{filteredIntersection.length - 12} weitere Spiele</p>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="mt-3 text-sm text-muted pl-8">
+              Lade gemeinsame Spiele, um einen Pool zu erstellen.
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* Step 4 – Pool & Pick */}
+      {hasFriendSelection && intersection.length > 0 && (
+        <section className="surface rounded-2xl p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-amber-400/20 text-xs font-semibold text-amber-200">
+                4
+              </span>
+              <h2 className="font-display text-base text-white">Spiel ausloesen</h2>
+            </div>
+            {pool?.id ? (
+              <Link
+                className="btn-animated flex-shrink-0 inline-flex items-center gap-1 text-xs text-amber-200 hover:text-amber-100"
+                href={`/pools/${pool.id}`}
+              >
+                <IconArrowRight className="h-3.5 w-3.5" />
+                Pool oeffnen
+              </Link>
             ) : (
-              <div className="flex items-center gap-3">
-                {pickImage ? (
-                  <Image
-                    src={pickImage}
-                    alt={pickResult}
-                    width={460}
-                    height={215}
-                    unoptimized
-                    className="h-16 w-28 rounded-md object-cover shadow-md"
-                    sizes="(max-width: 768px) 112px, 112px"
-                    onError={(e) => {
-                      const t = e.currentTarget as HTMLImageElement;
-                      if (!t.src.includes("/icons/icon-192.svg")) {
-                        t.src = "/icons/icon-192.svg";
-                      }
-                    }}
-                  />
-                ) : null}
-                <div className="min-w-0">
-                  <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Ergebnis</div>
-                  <div className="text-lg font-semibold leading-tight break-words">{pickResult}</div>
-                </div>
+              <button
+                id="btn-create-pool"
+                className="btn-animated flex-shrink-0 inline-flex items-center gap-2 rounded-full border border-white/20 px-3 py-1.5 text-sm text-white hover:border-white/40 disabled:opacity-60"
+                onClick={() => void createPool()}
+                disabled={!canCreatePool}
+              >
+                <IconStack className="h-4 w-4" />
+                Pool erstellen
+              </button>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-slate-400">Modus</label>
+              <select
+                className="rounded-lg border border-white/10 bg-black/30 px-3 py-1.5 text-sm text-white disabled:opacity-60"
+                value={pickMode}
+                onChange={(e) => setPickMode(e.target.value as "pure" | "avoid")}
+                disabled={isSpinBusy}
+              >
+                <option value="pure">Zufall</option>
+                <option value="avoid">Wiederholungen vermeiden</option>
+              </select>
+            </div>
+
+            {pickMode === "avoid" && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-slate-400">Letzte</label>
+                <input
+                  className="w-16 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white disabled:opacity-60"
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={avoidCount}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    setAvoidCount((prev) =>
+                      Number.isFinite(next) ? Math.max(1, Math.round(next)) : prev
+                    );
+                  }}
+                  disabled={isSpinBusy}
+                />
               </div>
             )}
           </div>
-        ) : null}
 
-        {pool?.id ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-slate-300">
-            <span>
-              Pool ID: {pool.id} {poolSeeded ? "(seeded)" : ""}
-            </span>
-            <Link
-              className="inline-flex items-center gap-1 text-amber-200 hover:text-amber-100"
-              href={`/pools/${pool.id}`}
-            >
-              <IconArrowRight className="h-4 w-4" />
-              Pool oeffnen
-            </Link>
+          <div
+            id="wheel"
+            className={`mt-5 flex items-center justify-center ${spinState === "preparing" ? "animate-pulse" : ""}`}
+          >
+            <AuctionWheel
+              ref={wheelRef}
+              items={wheelItems.map((g) => ({ appid: g.appid, name: g.name }))}
+              onCenterClick={() => void pickGame()}
+              disabled={!canPick}
+              disabledReason={pickDisabledReason}
+              allowDrag={false}
+              onActiveItemChange={(item) =>
+                setActiveWheelItem(item ? { appid: item.appid, name: item.name } : null)
+              }
+            />
           </div>
-        ) : null}
-        <p className="text-muted mt-3 text-xs">
-          Avoid schliesst die letzten Picks aus. Die Spin-Dauer steuert die Animation.
-        </p>
-      </section>
 
-      <section className="surface rounded-2xl p-6">
-        <h2 className="font-display text-lg text-white">So funktioniert&apos;s</h2>
-        <ol className="mt-3 grid gap-3 text-sm text-slate-300 md:grid-cols-2">
-          <li>1. Steam verbinden und Spiele laden.</li>
-          <li>2. Freunde waehlen und gemeinsame Spiele berechnen.</li>
-          <li>3. Pool erstellen und Spiele hinzufuegen.</li>
-          <li>4. Pick starten und gemeinsam loslegen.</li>
-        </ol>
-      </section>
+          {(isSpinBusy || pickResult) && (
+            <div
+              className={`mt-4 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 transition ${
+                pickPulse ? "animate-reveal-pick animate-pulse-once" : ""
+              }`}
+            >
+              {isSpinBusy ? (
+                spinningItem ? (
+                  <div className="flex items-center gap-3">
+                    <Image
+                      src={`https://cdn.akamai.steamstatic.com/steam/apps/${spinningItem.appid}/header.jpg`}
+                      alt={spinningItem.name}
+                      width={460}
+                      height={215}
+                      unoptimized
+                      className="h-16 w-28 rounded-md object-cover shadow-md"
+                      sizes="(max-width: 768px) 112px, 112px"
+                      onError={(e) => {
+                        const t = e.currentTarget as HTMLImageElement;
+                        if (!t.src.includes("/icons/icon-192.svg")) {
+                          t.src = "/icons/icon-192.svg";
+                        }
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Spinning…</div>
+                      <div className="text-lg font-semibold leading-tight break-words text-white">
+                        {spinningItem.name}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-300">Wheel dreht…</p>
+                )
+              ) : (
+                <div className="flex items-center gap-3">
+                  {pickImage && (
+                    <Image
+                      src={pickImage}
+                      alt={pickResult}
+                      width={460}
+                      height={215}
+                      unoptimized
+                      className="h-16 w-28 rounded-md object-cover shadow-md"
+                      sizes="(max-width: 768px) 112px, 112px"
+                      onError={(e) => {
+                        const t = e.currentTarget as HTMLImageElement;
+                        if (!t.src.includes("/icons/icon-192.svg")) {
+                          t.src = "/icons/icon-192.svg";
+                        }
+                      }}
+                    />
+                  )}
+                  <div className="min-w-0">
+                    <div className="text-xs uppercase tracking-[0.2em] text-slate-400">Heutiges Spiel</div>
+                    <div className="text-lg font-semibold leading-tight break-words text-white">{pickResult}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

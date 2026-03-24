@@ -5,15 +5,6 @@ import { usePathname } from "next/navigation";
 
 type IconProps = { className?: string };
 
-function IconHome({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <path d="M3 11.5L12 4l9 7.5" />
-      <path d="M5 10v9h14v-9" />
-    </svg>
-  );
-}
-
 function IconGrid({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
@@ -31,17 +22,6 @@ function IconStack({ className }: IconProps) {
       <path d="M4 8l8-4 8 4-8 4-8-4z" />
       <path d="M4 12l8 4 8-4" />
       <path d="M4 16l8 4 8-4" />
-    </svg>
-  );
-}
-
-function IconLibrary({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-      <path d="M9 7h6" />
-      <path d="M9 11h6" />
     </svg>
   );
 }
@@ -67,12 +47,10 @@ function IconUser({ className }: IconProps) {
 }
 
 const NAV_ITEMS = [
-  { href: "/", label: "Home", icon: IconHome },
   { href: "/dashboard", label: "Dashboard", icon: IconGrid },
   { href: "/pools", label: "Pools", icon: IconStack },
-  { href: "/library", label: "Library", icon: IconLibrary },
-  { href: "/friends", label: "Friends", icon: IconUsers },
-  { href: "/profile", label: "Profile", icon: IconUser },
+  { href: "/friends", label: "Freunde", icon: IconUsers },
+  { href: "/profile", label: "Profil", icon: IconUser },
 ];
 
 export default function BottomNav() {
@@ -81,10 +59,10 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-black/60 backdrop-blur"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-black/70 backdrop-blur-lg"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-around px-3 py-2">
+      <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-2">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
           const Icon = item.icon;
@@ -93,12 +71,14 @@ export default function BottomNav() {
               key={item.href}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              className={`flex flex-col items-center gap-1 rounded-lg px-3 py-2 text-xs transition ${
-                isActive ? "text-white" : "text-slate-400 hover:text-white"
+              className={`flex flex-col items-center gap-1 rounded-xl px-5 py-2 text-xs transition-all ${
+                isActive
+                  ? "bg-white/10 text-white"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <Icon className="h-5 w-5" />
-              <span className="text-[11px] font-medium">{item.label}</span>
+              <Icon className={`h-5 w-5 transition-transform ${isActive ? "scale-110" : ""}`} />
+              <span className="text-[10px] font-medium tracking-wide">{item.label}</span>
             </Link>
           );
         })}

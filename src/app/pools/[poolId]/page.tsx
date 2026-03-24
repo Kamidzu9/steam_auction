@@ -33,64 +33,68 @@ export default async function PoolPage({ params }: { params: { poolId: string } 
   }));
 
   return (
-    <div className="space-y-6">
-      <section className="surface rounded-2xl p-6">
-        <Link className="text-sm text-slate-400 hover:text-white" href="/pools">
-          Back to Pools
+    <div className="space-y-5">
+      <section className="surface rounded-2xl p-5">
+        <Link className="text-xs text-slate-400 hover:text-white" href="/pools">
+          ← Alle Pools
         </Link>
-        <h1 className="font-display mt-3 text-2xl text-white break-words">{pool.name}</h1>
-        <p className="text-muted mt-2 text-sm break-words">
-          Friend: {pool.friend?.displayName ?? pool.friend?.steamId ?? "Unknown"}
-        </p>
-        <p className="text-muted mt-1 text-sm">Games: {games.length}</p>
+        <h1 className="font-display mt-3 text-xl text-white break-words">{pool.name}</h1>
         <p className="text-muted mt-1 text-sm">
-          Erstellt: {new Date(pool.createdAt).toLocaleDateString("de-DE")}
+          mit {pool.friend?.displayName ?? pool.friend?.steamId ?? "Unbekannt"}
+          {" · "}{games.length} Spiele
         </p>
       </section>
 
       {games.length === 0 ? (
-        <section className="surface rounded-2xl p-6">
+        <section className="surface rounded-2xl p-5">
           <p className="text-muted text-sm">
             Dieser Pool ist leer. Fuege Spiele im Dashboard hinzu.
           </p>
+          <Link
+            href="/dashboard"
+            className="btn-animated mt-4 inline-flex rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
+          >
+            Zum Dashboard
+          </Link>
         </section>
       ) : (
         <PoolClient poolId={pool.id} games={games} />
       )}
 
-      <section className="surface rounded-2xl p-6">
-        <h2 className="font-display text-lg text-white">Pool Games</h2>
-        <div className="mt-4 grid gap-2 md:grid-cols-2">
-          {games.map((game) => (
-            <a
-              key={game.appId}
-              href={game.storeUrl ?? `https://store.steampowered.com/app/${game.appId}`}
-              className="min-w-0 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200 hover:border-white/30 break-words"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {game.name}
-            </a>
-          ))}
-        </div>
-      </section>
+      {games.length > 0 && (
+        <section className="surface rounded-2xl p-5">
+          <h2 className="font-display text-base text-white">Alle Spiele im Pool</h2>
+          <div className="mt-3 grid gap-1.5 md:grid-cols-2">
+            {games.map((game) => (
+              <a
+                key={game.appId}
+                href={game.storeUrl ?? `https://store.steampowered.com/app/${game.appId}`}
+                className="min-w-0 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200 hover:border-white/25 break-words transition-colors"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {game.name}
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {pool.picks.length > 0 ? (
-        <section className="surface rounded-2xl p-6">
-          <h2 className="font-display text-lg text-white">Letzte Picks</h2>
+      {pool.picks.length > 0 && (
+        <section className="surface rounded-2xl p-5">
+          <h2 className="font-display text-base text-white">Letzte Picks</h2>
           <div className="mt-3 grid gap-2 text-sm text-slate-300 md:grid-cols-2">
             {pool.picks.map((pick) => (
-              <div key={pick.id} className="rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-                <div className="text-white">{pick.game?.name ?? "Unknown"}</div>
-                <div className="text-xs text-slate-400">
-                  {new Date(pick.pickedAt).toLocaleString("de-DE")} • {pick.mode}
-                  {pick.mode === "avoid" && pick.avoidCount ? ` (avoid ${pick.avoidCount})` : ""}
+              <div key={pick.id} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+                <div className="text-white font-medium">{pick.game?.name ?? "Unbekannt"}</div>
+                <div className="text-xs text-slate-400 mt-0.5">
+                  {new Date(pick.pickedAt).toLocaleString("de-DE")}
                 </div>
               </div>
             ))}
           </div>
         </section>
-      ) : null}
+      )}
     </div>
   );
 }
