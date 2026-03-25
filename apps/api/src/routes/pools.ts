@@ -129,7 +129,7 @@ const poolsRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.status(400).send({ error: "Pool is empty. Add games before picking." });
       }
 
-      let candidates: Candidate[] = pool.games.map((pg) => ({
+      let candidates: Candidate[] = pool.games.map((pg: { gameId: string; game: { name: string; appId: number; storeUrl: string }; weight: number }) => ({
         id: pg.gameId,
         name: pg.game.name,
         appId: pg.game.appId,
@@ -151,7 +151,7 @@ const poolsRoutes: FastifyPluginAsync = async (fastify) => {
           orderBy: { pickedAt: "desc" },
           take: body.avoidCount,
         });
-        const recentIds = new Set(recent.map((p) => p.gameId));
+        const recentIds = new Set(recent.map((p: { gameId: string }) => p.gameId));
         const filtered = candidates.filter((g) => !recentIds.has(g.id));
         if (filtered.length > 0) candidates = filtered;
       }
@@ -202,8 +202,8 @@ const poolsRoutes: FastifyPluginAsync = async (fastify) => {
       });
 
       const appIds = picks
-        .map((p) => p.game?.appId)
-        .filter((id): id is number => typeof id === "number");
+        .map((p: { game?: { appId?: number } | null }) => p.game?.appId)
+        .filter((id: unknown): id is number => typeof id === "number");
 
       return reply.send({ appIds });
     }
