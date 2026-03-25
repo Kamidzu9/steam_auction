@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { resolve } from "node:path";
 import { z } from "zod";
 
@@ -19,6 +20,16 @@ function loadEnvFile() {
 }
 
 loadEnvFile();
+
+// Auto-generate a JWT secret for development if not provided
+if (!process.env.JWT_SECRET && process.env.NODE_ENV !== "production") {
+  process.env.JWT_SECRET = randomBytes(32).toString("hex");
+}
+
+// Default DATABASE_URL to a local SQLite file if not provided
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = "file:./dev.db";
+}
 
 const envSchema = z.object({
   NODE_ENV: z
