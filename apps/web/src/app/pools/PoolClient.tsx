@@ -102,17 +102,17 @@ export default function PoolClient({
   async function pickGame() {
     if (isSpinBusy) return;
     if (wheelGames.length === 0) {
-      setError("Keine passenden Spiele im Wheel.");
+      setError("No matching games in the wheel.");
       return;
     }
     setSpinState("preparing");
-    setStatus("Bereite Spin vor...");
+    setStatus("Preparing spin...");
     setError("");
     await new Promise((resolve) => setTimeout(resolve, 450));
     setPickResult("");
     setPickImage(null);
     setSpinState("spinning");
-    setStatus("Spiel wird ausgewaehlt...");
+    setStatus("Selecting game...");
     try {
       const data = await safeFetchJson<{
         pick?: { name: string; appId?: number };
@@ -134,7 +134,7 @@ export default function PoolClient({
       const pickedName = data.pick?.name;
       const pickedAppId = data.pick?.appId;
       if (pickedName) {
-        setStatus("Wheel dreht...");
+        setStatus("Wheel spinning...");
         if (pickedAppId && wheelRef.current) {
           try {
             const durationMs = Math.max(200, Math.round(spinSeconds * 1000));
@@ -154,7 +154,7 @@ export default function PoolClient({
         setTimeout(() => setPickPulse(false), 1200);
         setSpinState("result");
       } else {
-        setPickResult("Kein Pick verfuegbar.");
+        setPickResult("No pick available.");
         setSpinState("idle");
       }
       setStatus("");
@@ -172,14 +172,14 @@ export default function PoolClient({
       <section className="surface rounded-2xl p-6">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-300">Modus:</label>
+            <label className="text-sm text-slate-300">Mode:</label>
             <select
               className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
               value={pickMode}
               onChange={(e) => setPickMode(e.target.value as "pure" | "avoid")}
               disabled={isSpinBusy}
             >
-              <option value="pure">Zufall (pure)</option>
+              <option value="pure">Random</option>
               <option value="avoid">Avoid repeats</option>
             </select>
           </div>
@@ -234,8 +234,8 @@ export default function PoolClient({
             disabledReason={
               isSpinBusy
                 ? spinState === "preparing"
-                  ? "Spin wird vorbereitet..."
-                  : "Wheel dreht..."
+                  ? "Preparing spin..."
+                  : "Wheel spinning..."
                 : undefined
             }
             allowDrag={false}
@@ -278,7 +278,7 @@ export default function PoolClient({
                   />
                   <div className="min-w-0">
                     <div className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                      Ergebnis
+                      Result
                     </div>
                     <div className="text-lg font-semibold leading-tight break-words">
                       {spinningItem.name}
@@ -286,7 +286,7 @@ export default function PoolClient({
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-slate-300">Wheel dreht...</div>
+                <div className="text-sm text-slate-300">Wheel spinning...</div>
               )
             ) : (
               <div className="flex items-center gap-3">
@@ -309,7 +309,7 @@ export default function PoolClient({
                 ) : null}
                 <div className="min-w-0">
                   <div className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Ergebnis
+                    Result
                   </div>
                   <div className="text-lg font-semibold leading-tight break-words">
                     {pickResult}

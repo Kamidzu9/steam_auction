@@ -1,6 +1,14 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "@steam-auction/db";
 import { addFriendSchema, bulkAddFriendsSchema } from "@steam-auction/shared";
+import { z } from "zod";
+
+const deleteFriendSchema = z.object({
+  id: z.string().min(1).optional(),
+  steamId: z.string().min(1).optional(),
+}).refine((data) => data.id || data.steamId, {
+  message: "Either id or steamId is required",
+});
 
 const friendsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get(
@@ -67,16 +75,17 @@ const friendsRoutes: FastifyPluginAsync = async (fastify) => {
     "/",
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
-      const body = request.body as { id?: string; steamId?: string } | undefined;
-      if (!body?.id && !body?.steamId) {
-        return reply.status(400).send({ error: "Missing id or steamId" });
+      const validation = deleteFriendSchema.safeParse(request.body);
+      if (!validation.success) {
+        return reply.status(400).send({ error: validation.error.issues[0]?.message ?? "Invalid input" });
       }
 
+      const { id, steamId } = validation.data;
       try {
-        if (body.id) {
-          await prisma.friend.deleteMany({ where: { id: body.id, userId: request.userId } });
-        } else if (body.steamId) {
-          await prisma.friend.deleteMany({ where: { steamId: body.steamId, userId: request.userId } });
+        if (id) {
+          await prisma.friend.deleteMany({ where: { id, userId: request.userId } });
+        } else if (steamId) {
+          await prisma.friend.deleteMany({ where: { steamId, userId: request.userId } });
         }
         return reply.send({ ok: true });
       } catch {

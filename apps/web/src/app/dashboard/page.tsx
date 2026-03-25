@@ -20,11 +20,11 @@ export default function DashboardPage() {
           Dashboard
         </p>
         <h1 className="font-display text-3xl text-white md:text-4xl">
-          Steuere deinen Auction Flow
+          Manage your Auction Flow
         </h1>
         <p className="text-muted max-w-2xl text-sm">
-          Verbinde Steam, waehle Freunde, erstelle einen gemeinsamen Pool und
-          lass die Auktion ein Spiel aussuchen.
+          Connect Steam, select friends, create a shared pool, and
+          let the auction pick a game.
         </p>
         <div className="flex flex-wrap gap-3 text-xs uppercase tracking-[0.2em] text-slate-400">
           <span className="rounded-full border border-white/10 px-3 py-1">
@@ -44,23 +44,23 @@ export default function DashboardPage() {
       </Suspense>
 
       <section className="surface rounded-2xl p-6">
-        <h2 className="font-display text-lg text-white">Schnellstart</h2>
+        <h2 className="font-display text-lg text-white">Quick Start</h2>
         <p className="text-muted mt-2 text-sm">
-          Starte direkt mit einem Beispielpool oder springe in die Hilfe, wenn
-          du Details zu Steam Privacy brauchst.
+          Jump right in with a sample pool, or check out the help for
+          details about Steam privacy settings.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
             className="btn-animated rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white hover:border-white/30"
             href="/pools"
           >
-            Beispiel-Pool
+            Sample Pool
           </Link>
           <Link
             className="btn-animated rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white hover:border-white/30"
             href="/help"
           >
-            Hilfe & Tipps
+            Help & Tips
           </Link>
         </div>
       </section>

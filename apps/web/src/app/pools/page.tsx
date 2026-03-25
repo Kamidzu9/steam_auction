@@ -140,9 +140,9 @@ function PoolsPageContent() {
           </p>
           <p className="text-muted mt-1 text-sm">Games: {games.length}</p>
           <p className="text-muted mt-1 text-sm">
-            Erstellt:{" "}
+            Created:{" "}
             {pool?.createdAt
-              ? new Date(pool.createdAt).toLocaleDateString("de-DE")
+              ? new Date(pool.createdAt).toLocaleDateString("en-US")
               : ""}
           </p>
         </section>
@@ -150,7 +150,7 @@ function PoolsPageContent() {
         {games.length === 0 ? (
           <section className="surface rounded-2xl p-6">
             <p className="text-muted text-sm">
-              Dieser Pool ist leer. Fuege Spiele im Dashboard hinzu.
+              This pool is empty. Add games from the Dashboard.
             </p>
           </section>
         ) : (
@@ -179,7 +179,7 @@ function PoolsPageContent() {
 
         {pool?.picks && pool.picks.length > 0 ? (
           <section className="surface rounded-2xl p-6">
-            <h2 className="font-display text-lg text-white">Letzte Picks</h2>
+            <h2 className="font-display text-lg text-white">Recent Picks</h2>
             <div className="mt-3 grid gap-2 text-sm text-slate-300 md:grid-cols-2">
               {pool.picks.map((pick) => (
                 <div
@@ -190,7 +190,7 @@ function PoolsPageContent() {
                     {pick.game?.name ?? "Unknown"}
                   </div>
                   <div className="text-xs text-slate-400">
-                    {new Date(pick.pickedAt).toLocaleString("de-DE")} •{" "}
+                    {new Date(pick.pickedAt).toLocaleString("en-US")} •{" "}
                     {pick.mode}
                     {pick.mode === "avoid" && pick.avoidCount
                       ? ` (avoid ${pick.avoidCount})`
@@ -220,15 +220,15 @@ function PoolsPageContent() {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <h1 className="font-display text-2xl text-white">Deine Pools</h1>
+          <h1 className="font-display text-2xl text-white">Your Pools</h1>
           <p className="text-muted mt-2 text-sm">
-            Bitte anmelden, um deine Pools zu sehen.
+            Please log in to view your pools.
           </p>
           <Link
             href="/dashboard"
             className="btn-animated mt-4 inline-flex rounded-full border border-white/20 px-4 py-2 text-sm text-white hover:border-white/40"
           >
-            Zum Dashboard
+            Go to Dashboard
           </Link>
         </section>
       </div>
@@ -239,9 +239,9 @@ function PoolsPageContent() {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <h1 className="font-display text-2xl text-white">Fehler</h1>
+          <h1 className="font-display text-2xl text-white">Error</h1>
           <p className="text-muted mt-2 text-sm">
-            Beim Laden der Pools ist ein Fehler aufgetreten.
+            An error occurred while loading pools.
           </p>
         </section>
       </div>
@@ -251,11 +251,10 @@ function PoolsPageContent() {
   return (
     <div className="space-y-6">
       <section className="surface rounded-2xl p-6">
-        <h1 className="font-display text-2xl text-white">Deine Pools</h1>
+        <h1 className="font-display text-2xl text-white">Your Pools</h1>
         {pools.length === 0 ? (
           <p className="text-muted mt-2 text-sm">
-            Noch keine Pools vorhanden. Erstelle deinen ersten Pool im
-            Dashboard.
+            No pools yet. Create your first pool from the Dashboard.
           </p>
         ) : (
           <div className="mt-4 grid gap-4 md:grid-cols-2">

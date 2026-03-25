@@ -2,13 +2,41 @@ type SteamJson = Record<string, unknown>;
 
 const BASE_URL = "https://api.steampowered.com";
 
-export async function fetchSteam<T = SteamJson>(url: string) {
+// Simple per-process cache; cleared on restart and not shared across instances.
+const cache = new Map<string, { data: unknown; expiry: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCached<T>(key: string): T | undefined {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiry) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.data as T;
+}
+
+function setCache(key: string, data: unknown): void {
+  cache.set(key, { data, expiry: Date.now() + CACHE_TTL_MS });
+}
+
+export async function fetchSteam<T = SteamJson>(url: string, useCache = true) {
+  if (useCache) {
+    const cached = getCached<T>(url);
+    if (cached) return { ok: true as const, data: cached };
+  }
+
   const response = await fetch(url);
   if (!response.ok) {
     const text = await response.text();
     return { ok: false as const, status: response.status, text };
   }
   const data = (await response.json()) as T;
+
+  if (useCache) {
+    setCache(url, data);
+  }
+
   return { ok: true as const, data };
 }
 

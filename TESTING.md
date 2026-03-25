@@ -90,19 +90,19 @@ npx vitest
 | `pickUtils.test.ts`      | `pickWeighted` (weighted random selection, deterministic with mocked `Math.random`), `pickByIndex` (modulo wrap-around)          |
 | `forbiddenWords.test.ts` | Forbidden word list is non-empty, regex matches known words case-insensitively, only matches whole words                         |
 
-### `packages/api-client` — 21 tests
+### `packages/api-client` — 20 tests
 
-| File             | What is tested                                                                                                                                                                                                                                                                                                                                            |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `client.test.ts` | `ApiError` (message, status, instanceof), constructor (trailing slash stripping, `steamLoginUrl`), fetch behaviour (auth header, credentials, 401 retry with refresh, auth failure callback, no infinite retry loop), all API methods (logout, refresh, getPools, createPool, pickFromPool, getLeaderboard, getOwnedGames, getRecentPicks, addGameToPool) |
+| File             | What is tested                                                                                                                                                                                                                                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `client.test.ts` | `ApiError` (message, status, instanceof), constructor (trailing slash stripping, `steamLoginUrl`), fetch behaviour (auth header, credentials, 401 retry with refresh, auth failure callback, no infinite retry loop), all API methods (logout, refresh, getPools, createPool, pickFromPool, getOwnedGames, getRecentPicks, addGameToPool) |
 
-### `apps/api` — 59 tests
+### `apps/api` — 58 tests
 
 | File              | What is tested                                                                                                                                                                                                                                                |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `steam.test.ts`   | `buildSteamOpenIdUrl`, `verifySteamOpenId` (valid/invalid/network error), `getSteamBaseUrl` (env var vs. request URL)                                                                                                                                         |
 | `session.test.ts` | `createSession`, `validateRefreshToken` (undefined/not found/expired/valid), `rotateRefreshToken`, `revokeSession`                                                                                                                                            |
-| `routes.test.ts`  | `GET /health`, `GET /me` (401/200), `GET /friends` (401/200), `POST /auth/refresh` (no token/invalid/valid), `POST /auth/logout`, `GET /pools` (401/200), `GET /leaderboard`                                                                                  |
+| `routes.test.ts`  | `GET /health`, `GET /me` (401/200), `GET /friends` (401/200), `POST /auth/refresh` (no token/invalid/valid), `POST /auth/logout`, `GET /pools` (401/200)                                                                                                     |
 | `pools.test.ts`   | `POST /pools` (401/400/201/default name), `POST /pools/:id/games` (401/404/400/forbidden word/success), `POST /pools/:id/pick` (401/404/empty pool/success/appIds filter/avoid mode/invalid body), `GET /pools/:id/recent-picks` (401/zero limit/404/success) |
 | `friends.test.ts` | `GET /friends` (401/200 with data), `POST /friends` (401/400/201/correct userId), `POST /friends/bulk` (401/400/empty array/transaction), `DELETE /friends` (401/400/by id/by steamId)                                                                        |
 
@@ -112,7 +112,7 @@ npx vitest
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `BottomNav.test.tsx` | Always renders nav (regardless of auth state), renders all 6 nav links, `aria-current="page"` on active route, no `aria-current` on inactive links, nested route matching (`/pools/abc-123` activates Pools link) |
 
-**Total: 108 tests across 4 packages/apps.**
+**Total: 106 tests across 4 packages/apps.**
 
 ---
 
@@ -124,15 +124,18 @@ The CI pipeline runs on every push to `main`/`develop` and on every pull request
 
 ### Jobs
 
-| Job            | Runner                                                     | Description                                                                                    |
-| -------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `quality-gate` | `ubuntu-latest`                                            | Clean install, Linux CSS native binding verification, TypeScript checks, and all Vitest suites |
-| `build-api`    | `ubuntu-latest`                                            | Builds `packages/shared` and `apps/api` to catch compile regressions                           |
-| `build-web`    | Matrix (`ubuntu-latest`, `windows-latest`, `macos-latest`) | Verifies platform-native CSS bindings and runs `next build` on each OS                         |
+| Job            | Runner          | Description                                                                                    |
+| -------------- | --------------- | ---------------------------------------------------------------------------------------------- |
+| `quality-gate` | `ubuntu-latest` | Clean install, TypeScript checks, all Vitest suites, security audit                            |
+| `build-api`    | `ubuntu-latest` | Builds `packages/shared` and `apps/api` to catch compile regressions                           |
+| `build-web`    | `ubuntu-latest` | Verifies CSS bindings and runs `next build`                                                    |
 
-### Why the matrix build exists
+### Pipeline features
 
-Next.js 16 + Tailwind CSS 4 rely on native `lightningcss` and `@tailwindcss/oxide` binaries during `next build`. npm can skip optional native packages on CI runners, especially on Windows and macOS. The matrix build explicitly installs and verifies the correct native package from within `apps/web` before building, so the workspace-local dependency tree used by `next build` matches the native bindings that were just installed and platform-specific regressions are caught before merge.
+- Uses `.nvmrc` for consistent Node.js version
+- npm cache for faster CI runs
+- Security audit step (`npm audit`)
+- Concurrency control to cancel redundant runs
 
 ### Failure behaviour
 

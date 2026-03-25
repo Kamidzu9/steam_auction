@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
+import rateLimit from "@fastify/rate-limit";
 import { config } from "./config.js";
 import authPlugin from "./plugins/auth.js";
 import authRoutes from "./routes/auth.js";
@@ -9,8 +10,6 @@ import meRoutes from "./routes/me.js";
 import friendsRoutes from "./routes/friends.js";
 import poolsRoutes from "./routes/pools.js";
 import steamRoutes from "./routes/steam.js";
-import leaderboardRoutes from "./routes/leaderboard.js";
-import recommendationsRoutes from "./routes/recommendations.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -22,6 +21,11 @@ export async function buildApp() {
   // ── Plugins ────────────────────────────────────────────────────────────────
 
   await app.register(cookie);
+
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: "1 minute",
+  });
 
   await app.register(cors, {
     origin: config.FRONTEND_URL,
@@ -47,8 +51,6 @@ export async function buildApp() {
   await app.register(friendsRoutes, { prefix: "/friends" });
   await app.register(poolsRoutes, { prefix: "/pools" });
   await app.register(steamRoutes, { prefix: "/steam" });
-  await app.register(leaderboardRoutes, { prefix: "/leaderboard" });
-  await app.register(recommendationsRoutes, { prefix: "/recommendations" });
 
   // ── Health check ──────────────────────────────────────────────────────────
 

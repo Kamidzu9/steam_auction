@@ -211,15 +211,6 @@ describe("ApiClient methods", () => {
     expect(url).toBe("http://api.example.com/pools/pool-1/pick");
   });
 
-  it("getLeaderboard sends GET /leaderboard", async () => {
-    const mockData = { pickers: [], games: [] };
-    fetchMock.mockResolvedValue(new Response(JSON.stringify(mockData), { status: 200 }));
-    const result = await client.getLeaderboard();
-    expect(result.pickers).toEqual([]);
-    const [url] = fetchMock.mock.calls[0] as [string];
-    expect(url).toBe("http://api.example.com/leaderboard");
-  });
-
   it("getOwnedGames sends GET /steam/owned-games with steamId query param", async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ games: [] }), { status: 200 }));
     await client.getOwnedGames("76561198000000000");
