@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="de" suppressHydrationWarning={true}>
+    <html lang="en" suppressHydrationWarning={true}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0b0f14" />
@@ -44,9 +44,9 @@ export default function RootLayout({
             <footer className="surface mt-12 rounded-2xl p-4 text-sm text-slate-300">
               <div className="flex flex-col items-center justify-between gap-3 md:flex-row">
                 <div className="flex items-center gap-4">
-                  <a href="/help" className="hover:text-white">Hilfe</a>
-                  <a href="/privacy" className="hover:text-white">Datenschutz</a>
-                  <a href="/contact" className="hover:text-white">Kontakt</a>
+                  <a href="/help" className="hover:text-white">Help</a>
+                  <a href="/privacy" className="hover:text-white">Privacy</a>
+                  <a href="/contact" className="hover:text-white">Contact</a>
                 </div>
                 <div>(c) {new Date().getFullYear()} Steam Auction</div>
               </div>

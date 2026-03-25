@@ -1,43 +1,33 @@
 import Link from "next/link";
-
-type IconProps = { className?: string };
-
-function IconArrowRight({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
-      <path d="M5 12h14" />
-      <path d="M13 6l6 6-6 6" />
-    </svg>
-  );
-}
+import { IconArrowRight } from "../components/Icons";
 
 const steps = [
   {
-    title: "1. Spiele abrufen",
-    desc: "Hol dir deine Spieleliste und vergleiche sie mit Freunden.",
+    title: "1. Load games",
+    desc: "Get your game list and compare it with friends.",
   },
   {
-    title: "2. Pool bauen",
-    desc: "Fuege gemeinsame Spiele in einen Auction Pool hinzu.",
+    title: "2. Build a pool",
+    desc: "Add shared games to an auction pool.",
   },
   {
-    title: "3. Zufallspick",
-    desc: "Waehle per Zufall ein gemeinsames Spiel fuer den Abend.",
+    title: "3. Random pick",
+    desc: "Randomly choose a shared game for the evening.",
   },
 ];
 
 const highlights = [
   {
-    title: "Gemeinsame Bibliothek",
-    desc: "Sieh sofort, welche Co-op Titel euch beiden gehoeren.",
+    title: "Shared library",
+    desc: "Instantly see which co-op games you both own.",
   },
   {
-    title: "Gewichtetes Losen",
-    desc: "Neue Games bekommen einen Boost, Klassiker bleiben fair dabei.",
+    title: "Weighted picks",
+    desc: "New games get a boost, classics stay in the mix.",
   },
   {
-    title: "Schneller Start",
-    desc: "In unter einer Minute vom Login zum naechsten Abendspiel.",
+    title: "Quick start",
+    desc: "From login to game night in under a minute.",
   },
 ];
 
@@ -55,11 +45,10 @@ export default function Home() {
             </span>
             <div className="space-y-4">
               <h1 className="font-display text-4xl font-semibold leading-tight text-white md:text-5xl">
-                Finde in Sekunden ein gemeinsames Spiel fuer heute Abend.
+                Find a shared game in seconds.
               </h1>
               <p className="text-lg text-muted">
-                Melde dich mit Steam an, vergleiche eure Bibliotheken und lasse den
-                Auction Pool ein Co-op Game auswaehlen, das wirklich passt.
+                Sign in with Steam, compare your libraries, and let the picker choose a co-op game.
               </p>
             </div>
             <div className="flex flex-wrap gap-4">
@@ -68,31 +57,31 @@ export default function Home() {
                 href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"}/auth/steam`}
               >
                 <IconArrowRight className="h-4 w-4" />
-                Mit Steam verbinden
+                Connect with Steam
               </a>
               <Link
                 className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-semibold text-white backdrop-blur hover:border-white/40 hover:scale-[1.02]"
                 href="/dashboard"
               >
                 <IconArrowRight className="h-4 w-4" />
-                Zum Dashboard
+                Go to Dashboard
               </Link>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.2em] text-slate-400">
               <span className="rounded-full border border-white/10 px-3 py-1">Co-op</span>
               <span className="rounded-full border border-white/10 px-3 py-1">Live Pool</span>
-              <span className="rounded-full border border-white/10 px-3 py-1">1 Klick</span>
+              <span className="rounded-full border border-white/10 px-3 py-1">1 Click</span>
             </div>
           </div>
 
           <div className="surface-strong card-animated rounded-3xl p-6 lg:p-8 animate-pop">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Heute Abend</p>
+                <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Tonight</p>
                 <h2 className="font-display mt-2 text-2xl text-white">Live Auction Pool</h2>
               </div>
               <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-                Aktiv
+                Active
               </span>
             </div>
             <div className="mt-6 grid gap-3">
@@ -102,17 +91,17 @@ export default function Home() {
                   className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200"
                 >
                   <span>{game}</span>
-                  <span className="text-xs text-slate-400">bereit</span>
+                  <span className="text-xs text-slate-400">ready</span>
                 </div>
               ))}
             </div>
             <div className="mt-6 grid grid-cols-2 gap-4 text-sm text-slate-300">
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Freunde</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Friends</p>
                 <p className="mt-2 font-display text-2xl text-white">4</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Spiele</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Games</p>
                 <p className="mt-2 font-display text-2xl text-white">26</p>
               </div>
             </div>
@@ -135,10 +124,9 @@ export default function Home() {
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="surface rounded-3xl p-6 lg:p-8">
             <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Highlights</p>
-            <h2 className="font-display mt-3 text-2xl text-white">Mehr als nur ein Zufallspick.</h2>
+            <h2 className="font-display mt-3 text-2xl text-white">More than just a random pick.</h2>
             <p className="mt-3 text-sm text-muted">
-              Gewichtete Auswahl, Pool-Profile und eine klare Uebersicht helfen euch,
-              den Abend schnell zu starten.
+              Weighted selection and a clear overview help you start game night quickly.
             </p>
             <div className="mt-6 grid gap-4">
               {highlights.map((item) => (
@@ -151,13 +139,12 @@ export default function Home() {
           </div>
 
           <div className="surface-strong rounded-3xl p-6 lg:p-8">
-            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Bereit?</p>
+            <p className="text-xs uppercase tracking-[0.28em] text-slate-400">Ready?</p>
             <h2 className="font-display mt-3 text-2xl text-white">
-              Starte die naechste Session ohne lange Listen.
+              Start your next session without scrolling through lists.
             </h2>
             <p className="mt-3 text-sm text-muted">
-              Logge dich ein, waehle deine Freunde und starte die Auktion. In wenigen
-              Minuten steht euer naechstes Spiel fest.
+              Log in, pick your friends, and start the auction. Your next game is just minutes away.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a
@@ -165,14 +152,14 @@ export default function Home() {
                 href={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001"}/auth/steam`}
               >
                 <IconArrowRight className="h-4 w-4" />
-                Jetzt loslegen
+                Get Started
               </a>
               <Link
                 className="btn-animated inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-2.5 text-sm font-semibold text-white hover:border-white/40 hover:scale-[1.02]"
                 href="/pools"
               >
                 <IconArrowRight className="h-4 w-4" />
-                Pools ansehen
+                View Pools
               </Link>
             </div>
           </div>

@@ -42,9 +42,9 @@ export default function ProfilePage() {
     return (
       <div className="space-y-6">
         <section className="surface rounded-2xl p-6">
-          <h1 className="font-display text-2xl text-white">Profil</h1>
+          <h1 className="font-display text-2xl text-white">Profile</h1>
           <p className="text-muted mt-2 text-sm">
-            Bitte anmelden, um dein Profil zu sehen.
+            Please log in to view your profile.
           </p>
         </section>
       </div>
@@ -54,8 +54,8 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <section className="surface rounded-2xl p-6">
-        <h1 className="font-display text-2xl text-white">Profil</h1>
-        <p className="text-muted mt-2 text-sm">Hier findest du deine Account-Details.</p>
+        <h1 className="font-display text-2xl text-white">Profile</h1>
+        <p className="text-muted mt-2 text-sm">Your account details.</p>
 
         <div className="mt-4 flex items-center gap-4">
           {user?.avatarUrl ? (
@@ -69,12 +69,12 @@ export default function ProfilePage() {
             />
           ) : (
             <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center text-sm text-slate-300">
-              Kein Avatar
+              No Avatar
             </div>
           )}
 
           <div>
-            <div className="text-white font-semibold text-lg">{user?.displayName ?? "Unbekannt"}</div>
+            <div className="text-white font-semibold text-lg">{user?.displayName ?? "Unknown"}</div>
             <div className="text-sm text-slate-300 mt-1">SteamID: {user?.steamId}</div>
             <button
               onClick={logout}
