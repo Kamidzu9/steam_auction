@@ -6,7 +6,7 @@ on:
       version:
         description: "Pre-release version (e.g. 0.2.0-beta.1)"
         required: true
-        default: "0.1.0-beta.1"
+        default: "0.2.0-beta.1"
   push:
     tags:
       - "v*.*.*-*" # matches pre-release tags like v0.2.0-beta.1
