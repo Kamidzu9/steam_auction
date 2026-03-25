@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useApi } from "../lib/ApiProvider";
 import { completeOnboarding } from "../lib/onboarding";
 
@@ -280,11 +281,13 @@ function StepReady({
       {connected && profile && (
         <div className="mt-6 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-5 py-4">
           {profile.avatarUrl && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
+            <Image
               src={profile.avatarUrl}
               alt={profile.displayName ?? "Steam user"}
+              width={40}
+              height={40}
               className="h-10 w-10 rounded-full"
+              unoptimized
             />
           )}
           <div className="text-left">

@@ -21,7 +21,9 @@ function loadEnvFile() {
 
 loadEnvFile();
 
-// Auto-generate a JWT secret for development if not provided
+// Auto-generate a JWT secret for development if not provided.
+// Note: this secret changes on every restart, so sessions won't survive
+// server restarts in development. Set JWT_SECRET in .env for persistence.
 if (!process.env.JWT_SECRET && process.env.NODE_ENV !== "production") {
   process.env.JWT_SECRET = randomBytes(32).toString("hex");
 }
