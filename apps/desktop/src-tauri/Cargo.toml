@@ -1,6 +1,6 @@
 [package]
 name = "steam-auction-desktop"
-version = "0.2.0"
+version = "26.0"
 description = "Steam Auction – desktop client powered by Tauri"
 authors = ["Steam Auction Contributors"]
 license = ""

@@ -92,8 +92,8 @@ npx vitest
 
 ### `packages/api-client` — 20 tests
 
-| File             | What is tested                                                                                                                                                                                                                                                                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| File             | What is tested                                                                                                                                                                                                                                                                                                                            |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `client.test.ts` | `ApiError` (message, status, instanceof), constructor (trailing slash stripping, `steamLoginUrl`), fetch behaviour (auth header, credentials, 401 retry with refresh, auth failure callback, no infinite retry loop), all API methods (logout, refresh, getPools, createPool, pickFromPool, getOwnedGames, getRecentPicks, addGameToPool) |
 
 ### `apps/api` — 58 tests
@@ -102,14 +102,14 @@ npx vitest
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `steam.test.ts`   | `buildSteamOpenIdUrl`, `verifySteamOpenId` (valid/invalid/network error), `getSteamBaseUrl` (env var vs. request URL)                                                                                                                                         |
 | `session.test.ts` | `createSession`, `validateRefreshToken` (undefined/not found/expired/valid), `rotateRefreshToken`, `revokeSession`                                                                                                                                            |
-| `routes.test.ts`  | `GET /health`, `GET /me` (401/200), `GET /friends` (401/200), `POST /auth/refresh` (no token/invalid/valid), `POST /auth/logout`, `GET /pools` (401/200)                                                                                                     |
+| `routes.test.ts`  | `GET /health`, `GET /me` (401/200), `GET /friends` (401/200), `POST /auth/refresh` (no token/invalid/valid), `POST /auth/logout`, `GET /pools` (401/200)                                                                                                      |
 | `pools.test.ts`   | `POST /pools` (401/400/201/default name), `POST /pools/:id/games` (401/404/400/forbidden word/success), `POST /pools/:id/pick` (401/404/empty pool/success/appIds filter/avoid mode/invalid body), `GET /pools/:id/recent-picks` (401/zero limit/404/success) |
 | `friends.test.ts` | `GET /friends` (401/200 with data), `POST /friends` (401/400/201/correct userId), `POST /friends/bulk` (401/400/empty array/transaction), `DELETE /friends` (401/400/by id/by steamId)                                                                        |
 
 ### `apps/web` — 6 tests
 
-| File                 | What is tested                                                                                                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| File                 | What is tested                                                                                                                                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `BottomNav.test.tsx` | Always renders nav (regardless of auth state), renders all 6 nav links, `aria-current="page"` on active route, no `aria-current` on inactive links, nested route matching (`/pools/abc-123` activates Pools link) |
 
 **Total: 106 tests across 4 packages/apps.**
@@ -124,11 +124,11 @@ The CI pipeline runs on every push to `main`/`develop` and on every pull request
 
 ### Jobs
 
-| Job            | Runner          | Description                                                                                    |
-| -------------- | --------------- | ---------------------------------------------------------------------------------------------- |
-| `quality-gate` | `ubuntu-latest` | Clean install, TypeScript checks, all Vitest suites, security audit                            |
-| `build-api`    | `ubuntu-latest` | Builds `packages/shared` and `apps/api` to catch compile regressions                           |
-| `build-web`    | `ubuntu-latest` | Verifies CSS bindings and runs `next build`                                                    |
+| Job            | Runner          | Description                                                          |
+| -------------- | --------------- | -------------------------------------------------------------------- |
+| `quality-gate` | `ubuntu-latest` | Clean install, TypeScript checks, all Vitest suites, security audit  |
+| `build-api`    | `ubuntu-latest` | Builds `packages/shared` and `apps/api` to catch compile regressions |
+| `build-web`    | `ubuntu-latest` | Verifies CSS bindings and runs `next build`                          |
 
 ### Pipeline features
 
@@ -151,8 +151,8 @@ The pre-release pipeline builds all platform artifacts and publishes them as a G
 
 ### Triggers
 
-- **Manual dispatch** (`workflow_dispatch`) with a `version` input (e.g. `0.2.0-beta.1`).
-- **Tag push** matching `v*.*.*-*` (e.g. `v0.2.0-beta.1`).
+- **Manual dispatch** (`workflow_dispatch`) with a `version` input (e.g. `26.0-beta.1`).
+- **Tag push** matching `v*.*.*-*` (e.g. `v26.0-beta.1`).
 
 ### Jobs
 
@@ -184,8 +184,8 @@ The pre-release pipeline builds all platform artifacts and publishes them as a G
 
 ```bash
 # Bump version in package.json files first, then:
-git tag v0.2.0-beta.1
-git push origin v0.2.0-beta.1
+git tag v26.0-beta.1
+git push origin v26.0-beta.1
 ```
 
 The release workflow triggers automatically.
@@ -195,7 +195,7 @@ The release workflow triggers automatically.
 1. Open the **Actions** tab on GitHub.
 2. Select **Pre-Release** workflow.
 3. Click **Run workflow**.
-4. Enter the version string (e.g. `0.2.0-beta.1`).
+4. Enter the version string (e.g. `26.0-beta.1`).
 5. Click **Run workflow**.
 
 ---
@@ -208,9 +208,9 @@ Pre-release versions use the format: `MAJOR.MINOR.PATCH-LABEL.N`
 
 Examples:
 
-- `0.2.0-alpha.1` — early internal testing
-- `0.2.0-beta.1` — feature-complete, broader testing
-- `0.2.0-rc.1` — release candidate
+- `26.0-alpha.1` — early internal testing
+- `26.0-beta.1` — feature-complete, broader testing
+- `26.0-rc.1` — release candidate
 
 Update versions in the relevant `package.json` files before tagging.
 

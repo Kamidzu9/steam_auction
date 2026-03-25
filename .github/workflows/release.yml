@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Pre-release version (e.g. 0.2.0-beta.1)"
+        description: "Pre-release version (e.g. 26.0-beta.1)"
         required: true
-        default: "0.2.0-beta.1"
+        default: "26.0-beta.1"
   push:
     tags:
-      - "v*.*.*-*" # matches pre-release tags like v0.2.0-beta.1
+      - "v*.*.*-*" # matches pre-release tags like v26.0-beta.1
 
 permissions:
   contents: write
