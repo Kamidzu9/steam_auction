@@ -55,4 +55,3 @@ next-env.d.ts
 # tauri build outputs
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/
-package-lock.json
