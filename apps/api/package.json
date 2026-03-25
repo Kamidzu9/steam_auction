@@ -13,6 +13,7 @@
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.1",
     "@fastify/jwt": "^9.1.0",
+    "@fastify/rate-limit": "^10.3.0",
     "@steam-auction/db": "*",
     "@steam-auction/shared": "*",
     "fastify": "^5.2.1",

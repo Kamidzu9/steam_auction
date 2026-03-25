@@ -197,21 +197,4 @@ export class ApiClient {
     return this.fetch(`/steam/app-details?appId=${appId}`);
   }
 
-  // ── Leaderboard ──────────────────────────────────────────────────────────
-
-  async getLeaderboard(): Promise<{
-    pickers: Array<{ userId: string; name: string; picks: number }>;
-    games: Array<{ appId: number; name: string; picks: number }>;
-  }> {
-    return this.fetch("/leaderboard");
-  }
-
-  // ── Recommendations ──────────────────────────────────────────────────────
-
-  async getRecommendations(): Promise<{
-    topGames: Array<{ appId: number; name: string; picks: number }> | null[];
-    recent: Array<{ appId: number; name: string }>;
-  }> {
-    return this.fetch("/recommendations");
-  }
 }

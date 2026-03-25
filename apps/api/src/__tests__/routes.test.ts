@@ -169,13 +169,4 @@ describe("GET /pools", () => {
   });
 });
 
-describe("GET /leaderboard", () => {
-  it("returns pickers and games without auth", async () => {
-    prismaMock.pickHistory.groupBy.mockResolvedValue([]);
-    const res = await app.inject({ method: "GET", url: "/leaderboard" });
-    expect(res.statusCode).toBe(200);
-    const body = res.json<{ pickers: unknown[]; games: unknown[] }>();
-    expect(Array.isArray(body.pickers)).toBe(true);
-    expect(Array.isArray(body.games)).toBe(true);
-  });
-});
+
