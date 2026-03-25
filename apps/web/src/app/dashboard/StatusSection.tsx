@@ -105,8 +105,7 @@ export default function StatusSection({
 
       {loginFailed ? (
         <div className="mt-4 rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
-          Steam login failed. Please check your Steam session or
-          the STEAM_REALM URL.
+          Steam login failed. Please try again or check your Steam session.
         </div>
       ) : null}
 
