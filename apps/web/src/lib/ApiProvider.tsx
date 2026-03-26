@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useRef, useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useRef,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { ApiClient } from "@steam-auction/api-client";
 
 const isDesktop =
@@ -25,7 +32,10 @@ interface ApiContextValue {
 const ApiContext = createContext<ApiContextValue | null>(null);
 
 export function ApiProvider({ children }: { children: React.ReactNode }) {
-  const [auth, setAuth] = useState<AuthState>({ accessToken: null, isLoading: true });
+  const [auth, setAuth] = useState<AuthState>({
+    accessToken: null,
+    isLoading: true,
+  });
 
   const setAccessToken = useCallback((token: string | null) => {
     setAuth({ accessToken: token, isLoading: false });
@@ -53,7 +63,8 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
 
   // On mount: attempt a silent refresh to restore session from httpOnly cookie.
   useEffect(() => {
-    clientRef.current!.refresh()
+    clientRef
+      .current!.refresh()
       .then((result) => setAccessToken(result.accessToken))
       .catch(() => setAuth({ accessToken: null, isLoading: false }));
   }, [setAccessToken]);
