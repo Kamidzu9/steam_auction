@@ -630,18 +630,6 @@ export default function DashboardClient() {
         onAddToPool={() => void addIntersectionToPool()}
         onPickGame={() => void pickGame()}
       />
-
-      <section className="surface rounded-2xl p-6">
-        <h2 className="font-display text-lg text-white">
-          How it works
-        </h2>
-        <ol className="mt-3 grid gap-3 text-sm text-slate-300 md:grid-cols-2">
-          <li>1. Connect Steam and load your games.</li>
-          <li>2. Select friends and find shared games.</li>
-          <li>3. Create a pool and add games.</li>
-          <li>4. Start the pick and play together.</li>
-        </ol>
-      </section>
     </div>
   );
 }

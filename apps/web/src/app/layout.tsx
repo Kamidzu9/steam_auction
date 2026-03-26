@@ -16,7 +16,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Steam Auction MVP",
+  title: "Steam Auction",
   description: "Compare Steam libraries and pick a random co-op game.",
 };
 

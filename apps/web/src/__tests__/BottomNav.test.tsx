@@ -47,7 +47,7 @@ describe("BottomNav", () => {
   it("renders all expected navigation links", () => {
     render(<BottomNav />);
 
-    const expectedLabels = ["Home", "Dashboard", "Pools", "Library", "Friends", "Profile"];
+    const expectedLabels = ["Home", "Dashboard", "Pools", "Library", "Friends", "Settings"];
     for (const label of expectedLabels) {
       expect(screen.getByText(label)).not.toBeNull();
     }
