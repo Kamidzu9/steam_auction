@@ -151,8 +151,8 @@ The pre-release pipeline builds all platform artifacts and publishes them as a G
 
 ### Triggers
 
-- **Manual dispatch** (`workflow_dispatch`) with a `version` input (e.g. `26.0-beta.1`).
-- **Tag push** matching `v*.*.*-*` (e.g. `v26.0-beta.1`).
+- **Manual dispatch** (`workflow_dispatch`) with a `version` input (e.g. `26.0.0-beta.1`).
+- **Tag push** matching `v*.*.*-*` (e.g. `v26.0.0-beta.1`).
 
 ### Jobs
 
@@ -184,8 +184,8 @@ The pre-release pipeline builds all platform artifacts and publishes them as a G
 
 ```bash
 # Bump version in package.json files first, then:
-git tag v26.0-beta.1
-git push origin v26.0-beta.1
+git tag v26.0.0-beta.1
+git push origin v26.0.0-beta.1
 ```
 
 The release workflow triggers automatically.
@@ -195,7 +195,7 @@ The release workflow triggers automatically.
 1. Open the **Actions** tab on GitHub.
 2. Select **Pre-Release** workflow.
 3. Click **Run workflow**.
-4. Enter the version string (e.g. `26.0-beta.1`).
+4. Enter the version string (e.g. `26.0.0-beta.1`).
 5. Click **Run workflow**.
 
 ---
@@ -208,9 +208,9 @@ Pre-release versions use the format: `MAJOR.MINOR.PATCH-LABEL.N`
 
 Examples:
 
-- `26.0-alpha.1` — early internal testing
-- `26.0-beta.1` — feature-complete, broader testing
-- `26.0-rc.1` — release candidate
+- `26.0.0-alpha.1` — early internal testing
+- `26.0.0-beta.1` — feature-complete, broader testing
+- `26.0.0-rc.1` — release candidate
 
 Update versions in the relevant `package.json` files before tagging.
 

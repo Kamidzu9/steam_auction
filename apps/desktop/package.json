@@ -1,6 +1,6 @@
 {
   "name": "@steam-auction/desktop",
-  "version": "26.0",
+  "version": "26.0.0",
   "private": true,
   "scripts": {
     "dev": "tauri dev",
