@@ -37,7 +37,7 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
-  PORT: z.coerce.number().default(3001),
+  PORT: z.coerce.number().default(3010),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
@@ -59,7 +59,26 @@ function loadConfig() {
     );
     throw new Error(`Invalid environment configuration:\n${errors.join("\n")}`);
   }
-  return result.data;
+  const cfg = result.data;
+
+  // Warn in development when STEAM_API_KEY is not set, and fail early in production.
+  if (!cfg.STEAM_API_KEY) {
+    if (cfg.NODE_ENV === "production") {
+      throw new Error(
+        "Missing STEAM_API_KEY: a Steam Web API key is required in production for Steam integration.\n" +
+          "Obtain one at https://steamcommunity.com/dev/apikey and set STEAM_API_KEY and STEAM_REALM in your environment.",
+      );
+    } else if (cfg.NODE_ENV !== "test") {
+      // Non-fatal warning for development to make the problem visible early.
+      // Steam-related endpoints (login, owned-games, friends) will not function without a key.
+      // eslint-disable-next-line no-console
+      console.warn(
+        "Warning: STEAM_API_KEY is not set. Steam-related functionality will be disabled until you set STEAM_API_KEY in .env or environment variables.",
+      );
+    }
+  }
+
+  return cfg;
 }
 
 export const config = loadConfig();

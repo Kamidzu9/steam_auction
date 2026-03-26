@@ -60,9 +60,20 @@ cp .env.example .env
 npm run db:generate
 npm run db:migrate
 
-# 4. Start development (API on :3001, web on :3000)
+# 4. Start development (API on :3010, web on :3000)
 npm run dev
 ```
+
+## Server configuration
+
+Copy `.env.example` to `.env` and edit the following values before running the app:
+- `STEAM_API_KEY`: your Steam Web API key from https://steamcommunity.com/dev/apikey (required for Steam login, friends, owned-games).
+- `STEAM_REALM`: public base URL of your API (e.g. `http://localhost:3010` for local dev).
+- `PORT`: port the API will bind to (default `3010`).
+
+Make sure `NEXT_PUBLIC_API_URL` in `.env` matches the API base URL so the frontend can reach the backend.
+
+If you don't set `STEAM_API_KEY` you will see a warning in development; in production the API will refuse to start until the key is provided.
 
 ## Environment Variables
 
@@ -73,9 +84,9 @@ See `.env.example` for all variables. Key ones:
 | `DATABASE_URL`        | Yes      | SQLite path, e.g. `file:./dev.db`            |
 | `JWT_SECRET`          | Yes      | Random secret, at least 32 characters        |
 | `STEAM_API_KEY`       | Yes      | Steam Web API key (server-side only)         |
-| `STEAM_REALM`         | No       | Public API URL (default: `http://localhost:3001`) |
+| `STEAM_REALM`         | No       | Public API URL (default: `http://localhost:3010`) |
 | `FRONTEND_URL`        | No       | Frontend URL (default: `http://localhost:3000`)   |
-| `NEXT_PUBLIC_API_URL` | No       | API URL for browser (default: `http://localhost:3001`) |
+| `NEXT_PUBLIC_API_URL` | No       | API URL for browser (default: `http://localhost:3010`) |
 
 ## Testing
 
@@ -92,7 +103,7 @@ npm test --workspace=apps/web            # 6 tests
 
 ## API Endpoints
 
-All endpoints served by the Fastify backend on port `3001`.
+All endpoints served by the Fastify backend on port `3010`.
 
 | Method   | Path                      | Auth   | Description                       |
 | -------- | ------------------------- | ------ | --------------------------------- |
