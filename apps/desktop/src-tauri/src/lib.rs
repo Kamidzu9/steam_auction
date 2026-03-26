@@ -5,6 +5,16 @@ fn configure_linux_graphics_workarounds() {
     if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
     }
+
+    // Prefer a safer compositing path for older/quirky EGL driver setups.
+    if std::env::var_os("WEBKIT_FORCE_COMPOSITING_MODE").is_none() {
+        std::env::set_var("WEBKIT_FORCE_COMPOSITING_MODE", "1");
+    }
+
+    // Keep hardware GL enabled by default unless user explicitly overrides.
+    if std::env::var_os("LIBGL_ALWAYS_SOFTWARE").is_none() {
+        std::env::set_var("LIBGL_ALWAYS_SOFTWARE", "0");
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

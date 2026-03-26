@@ -3,7 +3,12 @@
 import { createContext, useContext, useRef, useCallback, useEffect, useState } from "react";
 import { ApiClient } from "@steam-auction/api-client";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const isDesktop =
+  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (isDesktop ? "http://127.0.0.1:3001" : "http://localhost:3001");
 
 interface AuthState {
   accessToken: string | null;
