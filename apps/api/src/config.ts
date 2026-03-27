@@ -76,7 +76,6 @@ export const config = loadConfig();
 
 export function setSteamConfig(apiKey: string, realm?: string) {
   config.STEAM_API_KEY = apiKey;
-  if (realm) {
-    config.STEAM_REALM = realm;
-  }
+  const normalizedRealm = realm?.trim();
+  config.STEAM_REALM = normalizedRealm ? normalizedRealm : undefined;
 }

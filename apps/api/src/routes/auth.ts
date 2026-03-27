@@ -5,6 +5,56 @@ import { getPlayerSummaries } from "../lib/steam-api.js";
 import { createSession, validateRefreshToken, rotateRefreshToken, revokeSession } from "../lib/session.js";
 import { config } from "../config.js";
 
+const SAFE_REDIRECT_PROTOCOLS = new Set(["http:", "https:", "tauri:"]);
+const LOOPBACK_HOST = "127.0.0.1";
+
+function resolvePostLoginRedirect(redirectTo: string | undefined) {
+  if (!redirectTo) {
+    return `${config.FRONTEND_URL}/dashboard`;
+  }
+
+  try {
+    const url = new URL(redirectTo);
+    if (!SAFE_REDIRECT_PROTOCOLS.has(url.protocol)) {
+      return `${config.FRONTEND_URL}/dashboard`;
+    }
+    return url.toString();
+  } catch {
+    return `${config.FRONTEND_URL}/dashboard`;
+  }
+}
+
+function getOpenIdParams(query: Record<string, string | undefined>) {
+  return new URLSearchParams(
+    Object.entries(query).flatMap(([key, value]) => {
+      if (!key.startsWith("openid.") || typeof value !== "string") {
+        return [];
+      }
+
+      return [[key, value] as [string, string]];
+    }),
+  );
+}
+
+function withLoginFailure(redirectTo: string) {
+  const url = new URL(redirectTo);
+  url.searchParams.set("login", "failed");
+  return url.toString();
+}
+
+function getRedirectFromReturnTo(query: Record<string, string | undefined>) {
+  const returnTo = query["openid.return_to"];
+  if (!returnTo) {
+    return undefined;
+  }
+
+  try {
+    return new URL(returnTo).searchParams.get("redirectTo") ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function refreshCookieOptions(expiresAt: Date) {
   return {
     httpOnly: true,
@@ -30,25 +80,30 @@ function accessCookieOptions() {
 const authRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /auth/steam — redirect user to Steam OpenID login page
   fastify.get("/steam", async (request, reply) => {
+    const query = request.query as Record<string, string | undefined>;
     const baseUrl = getSteamBaseUrl(request.url.startsWith("http")
       ? request.url
-      : `${config.STEAM_REALM ?? `http://localhost:${config.PORT}`}${request.url}`);
-    const apiBaseUrl = config.STEAM_REALM ?? `http://localhost:${config.PORT}`;
-    const returnTo = `${apiBaseUrl}/auth/steam/callback`;
+      : `${config.STEAM_REALM ?? `http://${LOOPBACK_HOST}:${config.PORT}`}${request.url}`);
+    const apiBaseUrl = config.STEAM_REALM ?? `http://${LOOPBACK_HOST}:${config.PORT}`;
+    const redirectTo = resolvePostLoginRedirect(query.redirectTo);
+    const returnToUrl = new URL(`${apiBaseUrl}/auth/steam/callback`);
+    returnToUrl.searchParams.set("redirectTo", redirectTo);
 
-    const redirectUrl = buildSteamOpenIdUrl(returnTo, getSteamBaseUrl(apiBaseUrl));
+    const redirectUrl = buildSteamOpenIdUrl(returnToUrl.toString(), getSteamBaseUrl(apiBaseUrl));
     return reply.redirect(redirectUrl, 302);
   });
 
   // GET /auth/steam/callback — Steam returns the user here after login
   fastify.get("/steam/callback", async (request, reply) => {
-    const params = new URLSearchParams(
-      Object.entries(request.query as Record<string, string>)
+    const query = request.query as Record<string, string | undefined>;
+    const params = getOpenIdParams(query);
+    const postLoginRedirect = resolvePostLoginRedirect(
+      query.redirectTo ?? getRedirectFromReturnTo(query),
     );
 
     const verification = await verifySteamOpenId(params);
     if (!verification.valid) {
-      return reply.redirect(`${config.FRONTEND_URL}/dashboard?login=failed`, 302);
+      return reply.redirect(withLoginFailure(postLoginRedirect), 302);
     }
 
     const { steamId } = verification;
@@ -91,7 +146,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         path: "/auth",
       });
 
-    return reply.redirect(`${config.FRONTEND_URL}/dashboard`, 302);
+    return reply.redirect(postLoginRedirect, 302);
   });
 
   // POST /auth/refresh — exchange refresh token for a new access token

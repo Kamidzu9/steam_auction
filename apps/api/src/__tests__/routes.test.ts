@@ -17,9 +17,7 @@ const configMock = vi.hoisted(() => ({
 const setSteamConfigMock = vi.hoisted(() =>
   vi.fn((apiKey: string, realm?: string) => {
     configMock.STEAM_API_KEY = apiKey;
-    if (realm !== undefined) {
-      configMock.STEAM_REALM = realm;
-    }
+    configMock.STEAM_REALM = realm;
   }),
 );
 
@@ -59,6 +57,19 @@ vi.mock("@steam-auction/db", () => ({
   PrismaClient: vi.fn(),
 }));
 
+const steamMock = vi.hoisted(() => ({
+  buildSteamOpenIdUrl: vi.fn((returnTo: string, realm: string) => {
+    const url = new URL("https://steamcommunity.com/openid/login");
+    url.searchParams.set("openid.return_to", returnTo);
+    url.searchParams.set("openid.realm", realm);
+    return url.toString();
+  }),
+  verifySteamOpenId: vi.fn(),
+  getSteamBaseUrl: vi.fn((requestUrl: string) => new URL(requestUrl).origin),
+}));
+
+vi.mock("../lib/steam.js", () => steamMock);
+
 import { buildApp } from "../server.js";
 
 let app: Awaited<ReturnType<typeof buildApp>>;
@@ -81,6 +92,14 @@ describe("GET /health", () => {
     const res = await app.inject({ method: "GET", url: "/health" });
     expect(res.statusCode).toBe(200);
     expect(res.json<{ ok: boolean }>().ok).toBe(true);
+  });
+
+  it("does not rate-limit loopback requests", async () => {
+    const responses = await Promise.all(
+      Array.from({ length: 120 }, () => app.inject({ method: "GET", url: "/health" })),
+    );
+
+    expect(responses.every((response) => response.statusCode === 200)).toBe(true);
   });
 });
 
@@ -185,6 +204,52 @@ describe("POST /auth/logout", () => {
   });
 });
 
+describe("GET /auth/steam", () => {
+  it("includes the requested post-login redirect target in the callback URL", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: "/auth/steam?redirectTo=tauri%3A%2F%2Flocalhost%2Fdashboard",
+    });
+
+    expect(res.statusCode).toBe(302);
+    const location = new URL(res.headers.location as string);
+    const returnTo = new URL(location.searchParams.get("openid.return_to") as string);
+
+    expect(returnTo.origin + returnTo.pathname).toBe(
+      "http://127.0.0.1:3001/auth/steam/callback",
+    );
+    expect(returnTo.searchParams.get("redirectTo")).toBe(
+      "tauri://localhost/dashboard",
+    );
+  });
+});
+
+describe("GET /auth/steam/callback", () => {
+  it("redirects failed auth attempts back to the requested target", async () => {
+    steamMock.verifySteamOpenId.mockResolvedValue({ valid: false });
+
+    const res = await app.inject({
+      method: "GET",
+      url: "/auth/steam/callback?redirectTo=tauri%3A%2F%2Flocalhost%2Fdashboard&openid.mode=id_res",
+    });
+
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe("tauri://localhost/dashboard?login=failed");
+  });
+
+  it("uses redirect target from openid.return_to when redirectTo is absent", async () => {
+    steamMock.verifySteamOpenId.mockResolvedValue({ valid: false });
+
+    const res = await app.inject({
+      method: "GET",
+      url: "/auth/steam/callback?openid.return_to=http%3A%2F%2F127.0.0.1%3A3001%2Fauth%2Fsteam%2Fcallback%3FredirectTo%3Dtauri%253A%252F%252Flocalhost%252Fdashboard&openid.mode=id_res",
+    });
+
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe("tauri://localhost/dashboard?login=failed");
+  });
+});
+
 describe("GET /pools", () => {
   it("returns 401 without auth token", async () => {
     const res = await app.inject({ method: "GET", url: "/pools" });
@@ -261,5 +326,27 @@ describe("POST /system/config", () => {
     expect(fsMock.writeFile).toHaveBeenCalledOnce();
     expect(configMock.STEAM_API_KEY).toBe("steam-key");
     expect(configMock.STEAM_REALM).toBe("https://app.example.com");
+  });
+
+  it("clears stale realm when payload omits realm", async () => {
+    configMock.STEAM_REALM = "http://localhost:3010";
+    fsMock.readFile.mockResolvedValue("STEAM_REALM=\"http://localhost:3010\"\nSTEAM_API_KEY=\"old\"\n");
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/system/config",
+      payload: {
+        apiKey: "steam-key",
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(setSteamConfigMock).toHaveBeenCalledWith("steam-key", undefined);
+    expect(configMock.STEAM_REALM).toBeUndefined();
+
+    expect(fsMock.writeFile).toHaveBeenCalledOnce();
+    const writtenEnv = fsMock.writeFile.mock.calls[0]?.[1] as string;
+    expect(writtenEnv).toContain('STEAM_API_KEY="steam-key"');
+    expect(writtenEnv).not.toContain("STEAM_REALM=");
   });
 });

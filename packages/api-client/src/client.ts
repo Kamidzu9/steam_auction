@@ -56,6 +56,22 @@ export class ApiClient {
     this.onAuthFailure = options.onAuthFailure;
   }
 
+  private getDefaultRedirectTo(): string | null {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    try {
+      if (window.location.origin === "tauri://localhost") {
+        return "http://tauri.localhost/dashboard";
+      }
+
+      return new URL("/dashboard", window.location.origin).toString();
+    } catch {
+      return null;
+    }
+  }
+
   private async fetch<T>(
     path: string,
     init: RequestInit = {},
@@ -63,9 +79,11 @@ export class ApiClient {
   ): Promise<T> {
     const token = this.getAccessToken ? await this.getAccessToken() : null;
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
       ...(init.headers as Record<string, string>),
     };
+    if (init.body !== undefined && !headers["Content-Type"]) {
+      headers["Content-Type"] = "application/json";
+    }
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
@@ -76,11 +94,18 @@ export class ApiClient {
       headers,
     });
 
-    if (res.status === 401 && retry && this.onRefresh) {
+    const isRefreshRequest = path === "/auth/refresh";
+
+    if (res.status === 401 && retry && this.onRefresh && !isRefreshRequest) {
       const newToken = await this.onRefresh();
       if (newToken) {
         return this.fetch<T>(path, init, false);
       }
+      this.onAuthFailure?.();
+      throw new ApiError("Unauthorized", 401);
+    }
+
+    if (res.status === 401 && isRefreshRequest) {
       this.onAuthFailure?.();
       throw new ApiError("Unauthorized", 401);
     }
@@ -96,7 +121,14 @@ export class ApiClient {
   // ── Auth ─────────────────────────────────────────────────────────────────
 
   get steamLoginUrl(): string {
-    return `${this.baseUrl}/auth/steam`;
+    const redirectTo = this.getDefaultRedirectTo();
+    if (!redirectTo) {
+      return `${this.baseUrl}/auth/steam`;
+    }
+
+    const loginUrl = new URL(`${this.baseUrl}/auth/steam`);
+    loginUrl.searchParams.set("redirectTo", redirectTo);
+    return loginUrl.toString();
   }
 
   async refresh(): Promise<AuthTokens & { user: UserPublic }> {

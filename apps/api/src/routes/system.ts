@@ -28,7 +28,8 @@ export default async function systemRoutes(app: FastifyInstance) {
       });
     }
 
-    const { apiKey, realm } = result.data;
+    const { apiKey } = result.data;
+    const realm = result.data.realm?.trim() || undefined;
 
     // 1. Update the running in-memory configuration
     setSteamConfig(apiKey, realm);
@@ -56,13 +57,18 @@ export default async function systemRoutes(app: FastifyInstance) {
         envContent += `\nSTEAM_API_KEY="${apiKey}"`;
       }
 
-      // Update or append STEAM_REALM
+      // Update, append, or remove STEAM_REALM
       if (realm) {
         if (envContent.includes("STEAM_REALM=")) {
           envContent = envContent.replace(/STEAM_REALM=.*/g, `STEAM_REALM="${realm}"`);
         } else {
           envContent += `\nSTEAM_REALM="${realm}"`;
         }
+      } else {
+        envContent = envContent
+          .split("\n")
+          .filter((line) => !line.startsWith("STEAM_REALM="))
+          .join("\n");
       }
 
       // Clean up multiple newlines and save

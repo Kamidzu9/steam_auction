@@ -28,6 +28,22 @@ describe("ApiClient constructor", () => {
     const client = new ApiClient({ baseUrl: "http://api.example.com" });
     expect(client.steamLoginUrl).toBe("http://api.example.com/auth/steam");
   });
+
+  it("includes a dashboard redirect when running in a browser", () => {
+    vi.stubGlobal("window", {
+      location: {
+        origin: "tauri://localhost",
+      },
+    });
+
+    const client = new ApiClient({ baseUrl: "http://127.0.0.1:3001" });
+    const loginUrl = new URL(client.steamLoginUrl);
+
+    expect(loginUrl.origin + loginUrl.pathname).toBe("http://127.0.0.1:3001/auth/steam");
+    expect(loginUrl.searchParams.get("redirectTo")).toBe("http://tauri.localhost/dashboard");
+
+    vi.unstubAllGlobals();
+  });
 });
 
 // ── fetch helper ─────────────────────────────────────────────────────────────
@@ -205,8 +221,26 @@ describe("ApiClient methods", () => {
     );
     const result = await client.refresh();
     expect(result.accessToken).toBe("tok");
-    const [url] = fetchMock.mock.calls[0] as [string];
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("http://api.example.com/auth/refresh");
+    expect((init.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
+  });
+
+  it("does not recurse refresh on 401 from /auth/refresh", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 }),
+    );
+
+    const onAuthFailure = vi.fn();
+    const clientWithRefresh = new ApiClient({
+      baseUrl: "http://api.example.com",
+      onRefresh: async () => clientWithRefresh.refresh().then((r) => r.accessToken),
+      onAuthFailure,
+    });
+
+    await expect(clientWithRefresh.refresh()).rejects.toThrow(ApiError);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(onAuthFailure).toHaveBeenCalledOnce();
   });
 
   it("getPools sends GET /pools", async () => {

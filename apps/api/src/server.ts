@@ -12,6 +12,37 @@ import poolsRoutes from "./routes/pools.js";
 import steamRoutes from "./routes/steam.js";
 import systemRoutes from "./routes/system.js";
 
+function isLoopbackAddress(ip: string | undefined) {
+  if (!ip) {
+    return false;
+  }
+
+  return ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1";
+}
+
+function isAllowedOrigin(origin: string) {
+  if (origin === config.FRONTEND_URL) {
+    return true;
+  }
+
+  if (origin === "tauri://localhost") {
+    return true;
+  }
+
+  try {
+    const url = new URL(origin);
+    const desktopHosts = new Set(["tauri.localhost", "localhost", "127.0.0.1"]);
+
+    if (desktopHosts.has(url.hostname)) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+}
+
 export async function buildApp() {
   const app = Fastify({
     logger: {
@@ -26,10 +57,18 @@ export async function buildApp() {
   await app.register(rateLimit, {
     max: 100,
     timeWindow: "1 minute",
+    allowList: (request) => isLoopbackAddress(request.ip),
   });
 
   await app.register(cors, {
-    origin: config.FRONTEND_URL,
+    origin: (origin, callback) => {
+      if (!origin || isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Origin not allowed"), false);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
