@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { config } from "../config.js";
 import { buildSteamOpenIdUrl, verifySteamOpenId, getSteamBaseUrl } from "../lib/steam.js";
 
 describe("Steam OpenID helpers", () => {
   const originalEnv = { ...process.env };
+  const originalRealm = config.STEAM_REALM;
 
   afterEach(() => {
     process.env = { ...originalEnv };
+    config.STEAM_REALM = originalRealm;
     vi.unstubAllGlobals();
   });
 
@@ -60,13 +63,14 @@ describe("Steam OpenID helpers", () => {
     expect(result.valid).toBe(false);
   });
 
-  it("uses STEAM_REALM env var for base URL", () => {
-    process.env.STEAM_REALM = "https://myapp.example.com/";
+  it("uses configured STEAM_REALM for base URL", () => {
+    config.STEAM_REALM = "https://myapp.example.com/";
     const base = getSteamBaseUrl("http://localhost:3001/auth/steam");
     expect(base).toBe("https://myapp.example.com");
   });
 
-  it("derives base URL from request URL when no env var is set", () => {
+  it("derives base URL from request URL when no configured base URL is set", () => {
+    config.STEAM_REALM = undefined;
     delete process.env.STEAM_REALM;
     delete process.env.API_URL;
     delete process.env.APP_URL;

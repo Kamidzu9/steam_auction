@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 
 // Mock next/navigation before importing the component
@@ -23,10 +23,43 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("../lib/ApiProvider", () => ({
+  useApi: vi.fn(() => ({
+    client: {},
+    accessToken: null,
+    isLoading: false,
+    setAccessToken: vi.fn(),
+    system: {
+      configured: true,
+      hasSteamApiKey: true,
+      isLoading: false,
+    },
+    refreshSystemStatus: vi.fn(),
+  })),
+}));
+
 import BottomNav from "../components/BottomNav";
 import { usePathname } from "next/navigation";
+import { useApi } from "../lib/ApiProvider";
 
 const mockUsePathname = vi.mocked(usePathname);
+const mockUseApi = vi.mocked(useApi);
+
+beforeEach(() => {
+  mockUsePathname.mockReturnValue("/");
+  mockUseApi.mockReturnValue({
+    client: {} as ReturnType<typeof useApi>["client"],
+    accessToken: null,
+    isLoading: false,
+    setAccessToken: vi.fn(),
+    system: {
+      configured: true,
+      hasSteamApiKey: true,
+      isLoading: false,
+    },
+    refreshSystemStatus: vi.fn(),
+  });
+});
 
 afterEach(() => {
   cleanup();
@@ -34,9 +67,45 @@ afterEach(() => {
 });
 
 describe("BottomNav", () => {
-  it("always renders the navigation regardless of auth state", () => {
+  it("renders the navigation when the system is configured", () => {
     const { container } = render(<BottomNav />);
     expect(container.firstChild).not.toBeNull();
+  });
+
+  it("does not render while system status is loading", () => {
+    mockUseApi.mockReturnValue({
+      client: {} as ReturnType<typeof useApi>["client"],
+      accessToken: null,
+      isLoading: false,
+      setAccessToken: vi.fn(),
+      system: {
+        configured: false,
+        hasSteamApiKey: false,
+        isLoading: true,
+      },
+      refreshSystemStatus: vi.fn(),
+    });
+
+    const { container } = render(<BottomNav />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("does not render when no Steam API key is configured", () => {
+    mockUseApi.mockReturnValue({
+      client: {} as ReturnType<typeof useApi>["client"],
+      accessToken: null,
+      isLoading: false,
+      setAccessToken: vi.fn(),
+      system: {
+        configured: false,
+        hasSteamApiKey: false,
+        isLoading: false,
+      },
+      refreshSystemStatus: vi.fn(),
+    });
+
+    const { container } = render(<BottomNav />);
+    expect(container.firstChild).toBeNull();
   });
 
   it("renders the navigation element", () => {

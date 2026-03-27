@@ -1,3 +1,5 @@
+import { config } from "../config.js";
+
 const STEAM_OPENID_ENDPOINT = "https://steamcommunity.com/openid/login";
 
 function normalizeBaseUrl(url: string) {
@@ -58,7 +60,7 @@ export async function verifySteamOpenId(params: URLSearchParams): Promise<
 
 export function getSteamBaseUrl(requestUrl: string): string {
   const envUrl =
-    process.env.STEAM_REALM ??
+    config.STEAM_REALM ??
     process.env.API_URL ??
     process.env.APP_URL;
 

@@ -10,6 +10,7 @@ import meRoutes from "./routes/me.js";
 import friendsRoutes from "./routes/friends.js";
 import poolsRoutes from "./routes/pools.js";
 import steamRoutes from "./routes/steam.js";
+import systemRoutes from "./routes/system.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -51,6 +52,7 @@ export async function buildApp() {
   await app.register(friendsRoutes, { prefix: "/friends" });
   await app.register(poolsRoutes, { prefix: "/pools" });
   await app.register(steamRoutes, { prefix: "/steam" });
+  await app.register(systemRoutes, { prefix: "/system" });
 
   // ── Health check ──────────────────────────────────────────────────────────
 

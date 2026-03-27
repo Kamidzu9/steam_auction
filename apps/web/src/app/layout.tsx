@@ -4,6 +4,7 @@ import "./globals.css";
 import ClientHelpers from "../components/ClientHelpers";
 import BottomNav from "../components/BottomNav";
 import { ApiProvider } from "../lib/ApiProvider";
+import AppWrapper from "../components/AppWrapper";
 
 const manrope = Manrope({
   variable: "--font-sans",
@@ -39,7 +40,9 @@ export default function RootLayout({
             id="main"
             className="min-h-[60vh] mx-auto max-w-6xl px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))]"
           >
-            {children}
+            <AppWrapper>
+              {children}
+            </AppWrapper>
 
             <footer className="surface mt-12 rounded-2xl p-4 text-sm text-slate-300">
               <div className="flex flex-col items-center justify-between gap-3 md:flex-row">

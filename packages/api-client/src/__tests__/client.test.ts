@@ -235,4 +235,35 @@ describe("ApiClient methods", () => {
     expect(result.skipped).toBe(true);
     expect(result.reason).toBe("forbidden_word");
   });
+
+  it("getSystemStatus sends GET /system/status", async () => {
+    fetchMock.mockResolvedValue(
+      new Response(JSON.stringify({ configured: true, hasSteamApiKey: true }), { status: 200 })
+    );
+
+    const result = await client.getSystemStatus();
+    expect(result).toEqual({ configured: true, hasSteamApiKey: true });
+
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toBe("http://api.example.com/system/status");
+  });
+
+  it("configureSystem sends POST /system/config with body", async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ success: true }), { status: 200 }));
+
+    const result = await client.configureSystem({
+      apiKey: "steam-key",
+      realm: "https://app.example.com",
+    });
+
+    expect(result).toEqual({ success: true });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("http://api.example.com/system/config");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual({
+      apiKey: "steam-key",
+      realm: "https://app.example.com",
+    });
+  });
 });

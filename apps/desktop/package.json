@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tauri dev",
     "tauri": "tauri",
-    "build": "command -v cargo >/dev/null 2>&1 && tauri build || echo 'Skipping desktop build: Cargo/Rust not installed. Install Rust from https://rustup.rs/'"
+    "build": "command -v cargo >/dev/null 2>&1 || { echo 'Skipping desktop build: Cargo/Rust not installed. Install Rust from https://rustup.rs/'; exit 0; }; tauri build"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0"

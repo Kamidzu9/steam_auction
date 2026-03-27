@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { resolveSteamId, fetchSteam, getPlayerSummaries } from "../lib/steam-api.js";
 import { appIdSchema, steamIdSchema } from "@steam-auction/shared";
+import { config } from "../config.js";
 
 const steamRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /steam/owned-games?steamId=...
@@ -8,7 +9,7 @@ const steamRoutes: FastifyPluginAsync = async (fastify) => {
     "/owned-games",
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
-      const apiKey = process.env.STEAM_API_KEY;
+      const apiKey = config.STEAM_API_KEY;
       if (!apiKey) {
         return reply.status(503).send({ error: "Service unavailable" });
       }
@@ -53,7 +54,7 @@ const steamRoutes: FastifyPluginAsync = async (fastify) => {
     "/friends",
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
-      const apiKey = process.env.STEAM_API_KEY;
+      const apiKey = config.STEAM_API_KEY;
       if (!apiKey) {
         return reply.status(503).send({ error: "Service unavailable" });
       }

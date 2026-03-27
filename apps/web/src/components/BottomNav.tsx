@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useApi as useSystemApi } from "../lib/ApiProvider";
 
 type IconProps = { className?: string };
 
@@ -76,6 +77,8 @@ const NAV_ITEMS = [
 ];
 
 export default function BottomNav() {
+  const _api = useSystemApi();
+  if (_api?.system?.isLoading || !_api?.system?.hasSteamApiKey) return null;
   const pathname = usePathname();
 
   return (

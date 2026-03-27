@@ -6,14 +6,14 @@ Compare Steam libraries with friends and pick random co-op games from shared poo
 
 **Monorepo** managed with npm workspaces + Turborepo.
 
-| Workspace             | Purpose                                                    |
-| --------------------- | ---------------------------------------------------------- |
-| `apps/api`            | Fastify backend — auth, business logic, Steam proxy, DB    |
-| `apps/web`            | Next.js frontend — static SPA, consumes API via HTTP       |
+| Workspace             | Purpose                                                      |
+| --------------------- | ------------------------------------------------------------ |
+| `apps/api`            | Fastify backend — auth, business logic, Steam proxy, DB      |
+| `apps/web`            | Next.js frontend — static SPA, consumes API via HTTP         |
 | `apps/desktop`        | Tauri wrapper — packages the web app as a native desktop app |
-| `packages/db`         | Prisma ORM client and migrations                           |
-| `packages/shared`     | Shared types, Zod schemas, and utility functions           |
-| `packages/api-client` | Type-safe HTTP client for the API                          |
+| `packages/db`         | Prisma ORM client and migrations                             |
+| `packages/shared`     | Shared types, Zod schemas, and utility functions             |
+| `packages/api-client` | Type-safe HTTP client for the API                            |
 
 ## Features
 
@@ -67,6 +67,7 @@ npm run dev
 ## Server configuration
 
 Copy `.env.example` to `.env` and edit the following values before running the app:
+
 - `STEAM_API_KEY`: your Steam Web API key from https://steamcommunity.com/dev/apikey (required for Steam login, friends, owned-games).
 - `STEAM_REALM`: public base URL of your API (e.g. `http://localhost:3010` for local dev).
 - `PORT`: port the API will bind to (default `3010`).
@@ -79,13 +80,13 @@ If you don't set `STEAM_API_KEY` you will see a warning in development; in produ
 
 See `.env.example` for all variables. Key ones:
 
-| Variable              | Required | Description                                  |
-| --------------------- | -------- | -------------------------------------------- |
-| `DATABASE_URL`        | Yes      | SQLite path, e.g. `file:./dev.db`            |
-| `JWT_SECRET`          | Yes      | Random secret, at least 32 characters        |
-| `STEAM_API_KEY`       | Yes      | Steam Web API key (server-side only)         |
-| `STEAM_REALM`         | No       | Public API URL (default: `http://localhost:3010`) |
-| `FRONTEND_URL`        | No       | Frontend URL (default: `http://localhost:3000`)   |
+| Variable              | Required | Description                                            |
+| --------------------- | -------- | ------------------------------------------------------ |
+| `DATABASE_URL`        | Yes      | SQLite path, e.g. `file:./dev.db`                      |
+| `JWT_SECRET`          | Yes      | Random secret, at least 32 characters                  |
+| `STEAM_API_KEY`       | Yes      | Steam Web API key (server-side only)                   |
+| `STEAM_REALM`         | No       | Public API URL (default: `http://localhost:3010`)      |
+| `FRONTEND_URL`        | No       | Frontend URL (default: `http://localhost:3000`)        |
 | `NEXT_PUBLIC_API_URL` | No       | API URL for browser (default: `http://localhost:3010`) |
 
 ## Testing
@@ -105,26 +106,26 @@ npm test --workspace=apps/web            # 6 tests
 
 All endpoints served by the Fastify backend on port `3010`.
 
-| Method   | Path                      | Auth   | Description                       |
-| -------- | ------------------------- | ------ | --------------------------------- |
-| `GET`    | `/health`                 | —      | Health check                      |
-| `GET`    | `/auth/steam`             | —      | Redirect to Steam OpenID login    |
-| `GET`    | `/auth/steam/callback`    | —      | Steam callback, issues JWT        |
-| `POST`   | `/auth/refresh`           | Cookie | Rotate refresh token              |
-| `POST`   | `/auth/logout`            | Cookie | Revoke session                    |
-| `GET`    | `/me`                     | JWT    | Get current user                  |
-| `GET`    | `/friends`                | JWT    | List saved friends                |
-| `POST`   | `/friends`                | JWT    | Add a friend                      |
-| `POST`   | `/friends/bulk`           | JWT    | Bulk import friends               |
-| `DELETE` | `/friends`                | JWT    | Remove a friend                   |
-| `GET`    | `/pools`                  | JWT    | List auction pools                |
-| `POST`   | `/pools`                  | JWT    | Create a pool                     |
-| `POST`   | `/pools/:id/games`        | JWT    | Add a game to a pool              |
-| `POST`   | `/pools/:id/pick`         | JWT    | Pick a random game                |
-| `GET`    | `/pools/:id/recent-picks` | JWT    | Get recently picked app IDs       |
-| `GET`    | `/steam/owned-games`      | JWT    | Fetch owned games for a Steam ID  |
-| `GET`    | `/steam/friends`          | JWT    | Fetch Steam friends list          |
-| `GET`    | `/steam/app-details`      | —      | Fetch store app details           |
+| Method   | Path                      | Auth   | Description                      |
+| -------- | ------------------------- | ------ | -------------------------------- |
+| `GET`    | `/health`                 | —      | Health check                     |
+| `GET`    | `/auth/steam`             | —      | Redirect to Steam OpenID login   |
+| `GET`    | `/auth/steam/callback`    | —      | Steam callback, issues JWT       |
+| `POST`   | `/auth/refresh`           | Cookie | Rotate refresh token             |
+| `POST`   | `/auth/logout`            | Cookie | Revoke session                   |
+| `GET`    | `/me`                     | JWT    | Get current user                 |
+| `GET`    | `/friends`                | JWT    | List saved friends               |
+| `POST`   | `/friends`                | JWT    | Add a friend                     |
+| `POST`   | `/friends/bulk`           | JWT    | Bulk import friends              |
+| `DELETE` | `/friends`                | JWT    | Remove a friend                  |
+| `GET`    | `/pools`                  | JWT    | List auction pools               |
+| `POST`   | `/pools`                  | JWT    | Create a pool                    |
+| `POST`   | `/pools/:id/games`        | JWT    | Add a game to a pool             |
+| `POST`   | `/pools/:id/pick`         | JWT    | Pick a random game               |
+| `GET`    | `/pools/:id/recent-picks` | JWT    | Get recently picked app IDs      |
+| `GET`    | `/steam/owned-games`      | JWT    | Fetch owned games for a Steam ID |
+| `GET`    | `/steam/friends`          | JWT    | Fetch Steam friends list         |
+| `GET`    | `/steam/app-details`      | —      | Fetch store app details          |
 
 ## Repository Structure
 

@@ -22,11 +22,19 @@ interface AuthState {
   isLoading: boolean;
 }
 
+interface SystemState {
+  configured: boolean;
+  hasSteamApiKey: boolean;
+  isLoading: boolean;
+}
+
 interface ApiContextValue {
   client: ApiClient;
   accessToken: string | null;
   isLoading: boolean;
   setAccessToken: (token: string | null) => void;
+  system: SystemState;
+  refreshSystemStatus: () => Promise<void>;
 }
 
 const ApiContext = createContext<ApiContextValue | null>(null);
@@ -37,8 +45,28 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     isLoading: true,
   });
 
+  const [system, setSystem] = useState<SystemState>({
+    configured: false,
+    hasSteamApiKey: false,
+    isLoading: true,
+  });
+
   const setAccessToken = useCallback((token: string | null) => {
     setAuth({ accessToken: token, isLoading: false });
+  }, []);
+
+  const refreshSystemStatus = useCallback(async () => {
+    if (!clientRef.current) return;
+    try {
+      const status = await clientRef.current.getSystemStatus();
+      setSystem({
+        configured: status.configured,
+        hasSteamApiKey: status.hasSteamApiKey,
+        isLoading: false,
+      });
+    } catch (err) {
+      setSystem((prev) => ({ ...prev, isLoading: false }));
+    }
   }, []);
 
   const clientRef = useRef<ApiClient | null>(null);
@@ -63,11 +91,13 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
 
   // On mount: attempt a silent refresh to restore session from httpOnly cookie.
   useEffect(() => {
+    refreshSystemStatus();
+
     clientRef
       .current!.refresh()
       .then((result) => setAccessToken(result.accessToken))
       .catch(() => setAuth({ accessToken: null, isLoading: false }));
-  }, [setAccessToken]);
+  }, [setAccessToken, refreshSystemStatus]);
 
   return (
     <ApiContext.Provider
@@ -76,6 +106,8 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
         accessToken: auth.accessToken,
         isLoading: auth.isLoading,
         setAccessToken,
+        system,
+        refreshSystemStatus,
       }}
     >
       {children}

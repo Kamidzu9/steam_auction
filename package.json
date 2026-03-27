@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "turbo run dev --parallel",
     "postinstall": "npm rebuild lightningcss @tailwindcss/oxide --workspace=apps/web || true",
-    "build": "turbo run build",
+    "build": "turbo run build --filter=!@steam-auction/desktop && npm run build --workspace=apps/desktop",
     "test": "turbo run test",
     "test:unit": "npm test --workspace=packages/shared && npm test --workspace=packages/api-client && npm test --workspace=apps/api && npm test --workspace=apps/web",
     "lint": "turbo run lint",

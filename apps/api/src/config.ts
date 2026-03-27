@@ -61,24 +61,22 @@ function loadConfig() {
   }
   const cfg = result.data;
 
-  // Warn in development when STEAM_API_KEY is not set, and fail early in production.
-  if (!cfg.STEAM_API_KEY) {
-    if (cfg.NODE_ENV === "production") {
-      throw new Error(
-        "Missing STEAM_API_KEY: a Steam Web API key is required in production for Steam integration.\n" +
-          "Obtain one at https://steamcommunity.com/dev/apikey and set STEAM_API_KEY and STEAM_REALM in your environment.",
-      );
-    } else if (cfg.NODE_ENV !== "test") {
-      // Non-fatal warning for development to make the problem visible early.
-      // Steam-related endpoints (login, owned-games, friends) will not function without a key.
-      // eslint-disable-next-line no-console
-      console.warn(
-        "Warning: STEAM_API_KEY is not set. Steam-related functionality will be disabled until you set STEAM_API_KEY in .env or environment variables.",
-      );
-    }
+  // Provide warning when STEAM_API_KEY is not set.
+  if (!cfg.STEAM_API_KEY && cfg.NODE_ENV !== "test") {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "Warning: STEAM_API_KEY is not set. Steam-related functionality will be disabled until you configure a Steam API Key.",
+    );
   }
 
   return cfg;
 }
 
 export const config = loadConfig();
+
+export function setSteamConfig(apiKey: string, realm?: string) {
+  config.STEAM_API_KEY = apiKey;
+  if (realm) {
+    config.STEAM_REALM = realm;
+  }
+}

@@ -197,4 +197,16 @@ export class ApiClient {
     return this.fetch(`/steam/app-details?appId=${appId}`);
   }
 
+  // ── System ───────────────────────────────────────────────────────────────
+
+  async getSystemStatus(): Promise<{ configured: boolean; hasSteamApiKey: boolean }> {
+    return this.fetch<{ configured: boolean; hasSteamApiKey: boolean }>("/system/status");
+  }
+
+  async configureSystem(input: { apiKey: string; realm?: string }): Promise<{ success: boolean }> {
+    return this.fetch<{ success: boolean }>("/system/config", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
 }
