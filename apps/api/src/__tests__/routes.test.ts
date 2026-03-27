@@ -96,10 +96,14 @@ describe("GET /health", () => {
 
   it("does not rate-limit loopback requests", async () => {
     const responses = await Promise.all(
-      Array.from({ length: 120 }, () => app.inject({ method: "GET", url: "/health" })),
+      Array.from({ length: 120 }, () =>
+        app.inject({ method: "GET", url: "/health" }),
+      ),
     );
 
-    expect(responses.every((response) => response.statusCode === 200)).toBe(true);
+    expect(responses.every((response) => response.statusCode === 200)).toBe(
+      true,
+    );
   });
 });
 
@@ -213,7 +217,9 @@ describe("GET /auth/steam", () => {
 
     expect(res.statusCode).toBe(302);
     const location = new URL(res.headers.location as string);
-    const returnTo = new URL(location.searchParams.get("openid.return_to") as string);
+    const returnTo = new URL(
+      location.searchParams.get("openid.return_to") as string,
+    );
 
     expect(returnTo.origin + returnTo.pathname).toBe(
       "http://127.0.0.1:3001/auth/steam/callback",
@@ -234,7 +240,9 @@ describe("GET /auth/steam/callback", () => {
     });
 
     expect(res.statusCode).toBe(302);
-    expect(res.headers.location).toBe("tauri://localhost/dashboard?login=failed");
+    expect(res.headers.location).toBe(
+      "tauri://localhost/dashboard?login=failed",
+    );
   });
 
   it("uses redirect target from openid.return_to when redirectTo is absent", async () => {
@@ -246,7 +254,9 @@ describe("GET /auth/steam/callback", () => {
     });
 
     expect(res.statusCode).toBe(302);
-    expect(res.headers.location).toBe("tauri://localhost/dashboard?login=failed");
+    expect(res.headers.location).toBe(
+      "tauri://localhost/dashboard?login=failed",
+    );
   });
 });
 
@@ -330,7 +340,9 @@ describe("POST /system/config", () => {
 
   it("clears stale realm when payload omits realm", async () => {
     configMock.STEAM_REALM = "http://localhost:3010";
-    fsMock.readFile.mockResolvedValue("STEAM_REALM=\"http://localhost:3010\"\nSTEAM_API_KEY=\"old\"\n");
+    fsMock.readFile.mockResolvedValue(
+      'STEAM_REALM="http://localhost:3010"\nSTEAM_API_KEY="old"\n',
+    );
 
     const res = await app.inject({
       method: "POST",

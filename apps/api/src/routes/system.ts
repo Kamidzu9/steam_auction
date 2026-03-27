@@ -52,7 +52,10 @@ export default async function systemRoutes(app: FastifyInstance) {
 
       // Update or append STEAM_API_KEY
       if (envContent.includes("STEAM_API_KEY=")) {
-        envContent = envContent.replace(/STEAM_API_KEY=.*/g, `STEAM_API_KEY="${apiKey}"`);
+        envContent = envContent.replace(
+          /STEAM_API_KEY=.*/g,
+          `STEAM_API_KEY="${apiKey}"`,
+        );
       } else {
         envContent += `\nSTEAM_API_KEY="${apiKey}"`;
       }
@@ -60,7 +63,10 @@ export default async function systemRoutes(app: FastifyInstance) {
       // Update, append, or remove STEAM_REALM
       if (realm) {
         if (envContent.includes("STEAM_REALM=")) {
-          envContent = envContent.replace(/STEAM_REALM=.*/g, `STEAM_REALM="${realm}"`);
+          envContent = envContent.replace(
+            /STEAM_REALM=.*/g,
+            `STEAM_REALM="${realm}"`,
+          );
         } else {
           envContent += `\nSTEAM_REALM="${realm}"`;
         }
@@ -77,7 +83,10 @@ export default async function systemRoutes(app: FastifyInstance) {
 
       app.log.info("Successfully persisted Steam configuration to .env");
     } catch (err) {
-      app.log.warn({ err }, "Failed to persist configuration to .env file. Changes are only applied in-memory.");
+      app.log.warn(
+        { err },
+        "Failed to persist configuration to .env file. Changes are only applied in-memory.",
+      );
     }
 
     return { success: true };

@@ -1,8 +1,17 @@
 import type { FastifyPluginAsync } from "fastify";
 import { prisma } from "@steam-auction/db";
-import { buildSteamOpenIdUrl, verifySteamOpenId, getSteamBaseUrl } from "../lib/steam.js";
+import {
+  buildSteamOpenIdUrl,
+  verifySteamOpenId,
+  getSteamBaseUrl,
+} from "../lib/steam.js";
 import { getPlayerSummaries } from "../lib/steam-api.js";
-import { createSession, validateRefreshToken, rotateRefreshToken, revokeSession } from "../lib/session.js";
+import {
+  createSession,
+  validateRefreshToken,
+  rotateRefreshToken,
+  revokeSession,
+} from "../lib/session.js";
 import { config } from "../config.js";
 
 const SAFE_REDIRECT_PROTOCOLS = new Set(["http:", "https:", "tauri:"]);
@@ -81,15 +90,21 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /auth/steam — redirect user to Steam OpenID login page
   fastify.get("/steam", async (request, reply) => {
     const query = request.query as Record<string, string | undefined>;
-    const baseUrl = getSteamBaseUrl(request.url.startsWith("http")
-      ? request.url
-      : `${config.STEAM_REALM ?? `http://${LOOPBACK_HOST}:${config.PORT}`}${request.url}`);
-    const apiBaseUrl = config.STEAM_REALM ?? `http://${LOOPBACK_HOST}:${config.PORT}`;
+    const baseUrl = getSteamBaseUrl(
+      request.url.startsWith("http")
+        ? request.url
+        : `${config.STEAM_REALM ?? `http://${LOOPBACK_HOST}:${config.PORT}`}${request.url}`,
+    );
+    const apiBaseUrl =
+      config.STEAM_REALM ?? `http://${LOOPBACK_HOST}:${config.PORT}`;
     const redirectTo = resolvePostLoginRedirect(query.redirectTo);
     const returnToUrl = new URL(`${apiBaseUrl}/auth/steam/callback`);
     returnToUrl.searchParams.set("redirectTo", redirectTo);
 
-    const redirectUrl = buildSteamOpenIdUrl(returnToUrl.toString(), getSteamBaseUrl(apiBaseUrl));
+    const redirectUrl = buildSteamOpenIdUrl(
+      returnToUrl.toString(),
+      getSteamBaseUrl(apiBaseUrl),
+    );
     return reply.redirect(redirectUrl, 302);
   });
 
@@ -112,7 +127,10 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
     if (config.STEAM_API_KEY) {
       try {
-        const summary = await getPlayerSummaries([steamId], config.STEAM_API_KEY);
+        const summary = await getPlayerSummaries(
+          [steamId],
+          config.STEAM_API_KEY,
+        );
         const player = summary.ok ? summary.data.response.players[0] : null;
         if (player) {
           displayName = player.personaname;
@@ -133,7 +151,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
     const accessToken = fastify.jwt.sign(
       { sub: user.id, steamId: user.steamId },
-      { expiresIn: config.JWT_ACCESS_EXPIRES_IN }
+      { expiresIn: config.JWT_ACCESS_EXPIRES_IN },
     );
 
     reply
@@ -160,15 +178,18 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       reply
         .clearCookie("access_token", { path: "/" })
         .clearCookie("refresh", { path: "/auth/refresh" });
-      return reply.status(401).send({ error: "Invalid or expired refresh token" });
+      return reply
+        .status(401)
+        .send({ error: "Invalid or expired refresh token" });
     }
 
     const { session, user } = validated;
-    const { refreshToken: newRefreshToken, expiresAt } = await rotateRefreshToken(session.id);
+    const { refreshToken: newRefreshToken, expiresAt } =
+      await rotateRefreshToken(session.id);
 
     const accessToken = fastify.jwt.sign(
       { sub: user.id, steamId: user.steamId },
-      { expiresIn: config.JWT_ACCESS_EXPIRES_IN }
+      { expiresIn: config.JWT_ACCESS_EXPIRES_IN },
     );
 
     reply

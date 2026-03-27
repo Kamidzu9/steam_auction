@@ -36,7 +36,7 @@ export interface ApiClientOptions {
 export class ApiError extends Error {
   constructor(
     message: string,
-    public readonly status: number
+    public readonly status: number,
   ) {
     super(message);
     this.name = "ApiError";
@@ -75,7 +75,7 @@ export class ApiClient {
   private async fetch<T>(
     path: string,
     init: RequestInit = {},
-    retry = true
+    retry = true,
   ): Promise<T> {
     const token = this.getAccessToken ? await this.getAccessToken() : null;
     const headers: Record<string, string> = {
@@ -111,8 +111,11 @@ export class ApiClient {
     }
 
     if (!res.ok) {
-      const body = await res.json().catch(() => ({})) as { error?: string };
-      throw new ApiError(body.error ?? `Request failed with status ${res.status}`, res.status);
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new ApiError(
+        body.error ?? `Request failed with status ${res.status}`,
+        res.status,
+      );
     }
 
     return res.json() as Promise<T>;
@@ -160,14 +163,19 @@ export class ApiClient {
     });
   }
 
-  async addFriendsBulk(input: BulkAddFriendsInput): Promise<{ ok: boolean; count: number }> {
+  async addFriendsBulk(
+    input: BulkAddFriendsInput,
+  ): Promise<{ ok: boolean; count: number }> {
     return this.fetch<{ ok: boolean; count: number }>("/friends/bulk", {
       method: "POST",
       body: JSON.stringify(input),
     });
   }
 
-  async deleteFriend(params: { id?: string; steamId?: string }): Promise<{ ok: boolean }> {
+  async deleteFriend(params: {
+    id?: string;
+    steamId?: string;
+  }): Promise<{ ok: boolean }> {
     return this.fetch<{ ok: boolean }>("/friends", {
       method: "DELETE",
       body: JSON.stringify(params),
@@ -189,7 +197,7 @@ export class ApiClient {
 
   async addGameToPool(
     poolId: string,
-    input: AddGameInput
+    input: AddGameInput,
   ): Promise<{ poolGame?: unknown; skipped?: boolean; reason?: string }> {
     return this.fetch(`/pools/${poolId}/games`, {
       method: "POST",
@@ -199,43 +207,58 @@ export class ApiClient {
 
   async pickFromPool(
     poolId: string,
-    input: PickGameInput = {}
-  ): Promise<{ pick: { id: string; name: string; appId: number; storeUrl: string } }> {
+    input: PickGameInput = {},
+  ): Promise<{
+    pick: { id: string; name: string; appId: number; storeUrl: string };
+  }> {
     return this.fetch(`/pools/${poolId}/pick`, {
       method: "POST",
       body: JSON.stringify(input),
     });
   }
 
-  async getRecentPicks(poolId: string, limit: number): Promise<{ appIds: number[] }> {
+  async getRecentPicks(
+    poolId: string,
+    limit: number,
+  ): Promise<{ appIds: number[] }> {
     return this.fetch(`/pools/${poolId}/recent-picks?limit=${limit}`);
   }
 
   // ── Steam ────────────────────────────────────────────────────────────────
 
   async getOwnedGames(steamId: string): Promise<{ games: SteamGame[] }> {
-    return this.fetch<{ games: SteamGame[] }>(`/steam/owned-games?steamId=${encodeURIComponent(steamId)}`);
+    return this.fetch<{ games: SteamGame[] }>(
+      `/steam/owned-games?steamId=${encodeURIComponent(steamId)}`,
+    );
   }
 
   async getSteamFriends(
-    steamId: string
+    steamId: string,
   ): Promise<{ friends: { steamid: string }[]; profiles?: SteamPlayer[] }> {
     return this.fetch(`/steam/friends?steamId=${encodeURIComponent(steamId)}`);
   }
 
   async getAppDetails(
-    appId: number
+    appId: number,
   ): Promise<{ categories: string[]; genres: string[]; data: unknown }> {
     return this.fetch(`/steam/app-details?appId=${appId}`);
   }
 
   // ── System ───────────────────────────────────────────────────────────────
 
-  async getSystemStatus(): Promise<{ configured: boolean; hasSteamApiKey: boolean }> {
-    return this.fetch<{ configured: boolean; hasSteamApiKey: boolean }>("/system/status");
+  async getSystemStatus(): Promise<{
+    configured: boolean;
+    hasSteamApiKey: boolean;
+  }> {
+    return this.fetch<{ configured: boolean; hasSteamApiKey: boolean }>(
+      "/system/status",
+    );
   }
 
-  async configureSystem(input: { apiKey: string; realm?: string }): Promise<{ success: boolean }> {
+  async configureSystem(input: {
+    apiKey: string;
+    realm?: string;
+  }): Promise<{ success: boolean }> {
     return this.fetch<{ success: boolean }>("/system/config", {
       method: "POST",
       body: JSON.stringify(input),

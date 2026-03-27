@@ -39,8 +39,12 @@ describe("ApiClient constructor", () => {
     const client = new ApiClient({ baseUrl: "http://127.0.0.1:3001" });
     const loginUrl = new URL(client.steamLoginUrl);
 
-    expect(loginUrl.origin + loginUrl.pathname).toBe("http://127.0.0.1:3001/auth/steam");
-    expect(loginUrl.searchParams.get("redirectTo")).toBe("http://tauri.localhost/dashboard");
+    expect(loginUrl.origin + loginUrl.pathname).toBe(
+      "http://127.0.0.1:3001/auth/steam",
+    );
+    expect(loginUrl.searchParams.get("redirectTo")).toBe(
+      "http://tauri.localhost/dashboard",
+    );
 
     vi.unstubAllGlobals();
   });
@@ -223,7 +227,9 @@ describe("ApiClient methods", () => {
     expect(result.accessToken).toBe("tok");
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("http://api.example.com/auth/refresh");
-    expect((init.headers as Record<string, string>)["Content-Type"]).toBeUndefined();
+    expect(
+      (init.headers as Record<string, string>)["Content-Type"],
+    ).toBeUndefined();
   });
 
   it("does not recurse refresh on 401 from /auth/refresh", async () => {
@@ -234,7 +240,8 @@ describe("ApiClient methods", () => {
     const onAuthFailure = vi.fn();
     const clientWithRefresh = new ApiClient({
       baseUrl: "http://api.example.com",
-      onRefresh: async () => clientWithRefresh.refresh().then((r) => r.accessToken),
+      onRefresh: async () =>
+        clientWithRefresh.refresh().then((r) => r.accessToken),
       onAuthFailure,
     });
 
