@@ -39,7 +39,12 @@ vi.mock("node:fs/promises", () => ({
 
 // Use vi.hoisted so that prismaMock is available when the factory is called.
 const prismaMock = vi.hoisted(() => ({
-  session: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+  session: {
+    create: vi.fn(),
+    findFirst: vi.fn(),
+    update: vi.fn(),
+    updateMany: vi.fn(),
+  },
   user: { findUnique: vi.fn(), upsert: vi.fn() },
   friend: { findMany: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
   auctionPool: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn() },
@@ -150,7 +155,12 @@ describe("POST /auth/refresh", () => {
       revoked: false,
       expiresAt: new Date(Date.now() + 100_000),
     };
-    const mockUser = { id: "user-1", steamId: "76561198000000000", displayName: null, avatarUrl: null };
+    const mockUser = {
+      id: "user-1",
+      steamId: "76561198000000000",
+      displayName: null,
+      avatarUrl: null,
+    };
     prismaMock.session.findFirst.mockResolvedValue(mockSession);
     prismaMock.user.findUnique.mockResolvedValue(mockUser);
     prismaMock.session.update.mockResolvedValue({});
@@ -198,7 +208,9 @@ describe("GET /system/status", () => {
   it("reports unconfigured state when no Steam API key is present", async () => {
     const res = await app.inject({ method: "GET", url: "/system/status" });
     expect(res.statusCode).toBe(200);
-    expect(res.json<{ configured: boolean; hasSteamApiKey: boolean }>()).toEqual({
+    expect(
+      res.json<{ configured: boolean; hasSteamApiKey: boolean }>(),
+    ).toEqual({
       configured: false,
       hasSteamApiKey: false,
     });
@@ -209,7 +221,9 @@ describe("GET /system/status", () => {
 
     const res = await app.inject({ method: "GET", url: "/system/status" });
     expect(res.statusCode).toBe(200);
-    expect(res.json<{ configured: boolean; hasSteamApiKey: boolean }>()).toEqual({
+    expect(
+      res.json<{ configured: boolean; hasSteamApiKey: boolean }>(),
+    ).toEqual({
       configured: true,
       hasSteamApiKey: true,
     });
@@ -240,11 +254,12 @@ describe("POST /system/config", () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.json<{ success: boolean }>()).toEqual({ success: true });
-    expect(setSteamConfigMock).toHaveBeenCalledWith("steam-key", "https://app.example.com");
+    expect(setSteamConfigMock).toHaveBeenCalledWith(
+      "steam-key",
+      "https://app.example.com",
+    );
     expect(fsMock.writeFile).toHaveBeenCalledOnce();
     expect(configMock.STEAM_API_KEY).toBe("steam-key");
     expect(configMock.STEAM_REALM).toBe("https://app.example.com");
   });
 });
-
-

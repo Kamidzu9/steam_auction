@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { config } from "../config.js";
-import { buildSteamOpenIdUrl, verifySteamOpenId, getSteamBaseUrl } from "../lib/steam.js";
+import {
+  buildSteamOpenIdUrl,
+  verifySteamOpenId,
+  getSteamBaseUrl,
+} from "../lib/steam.js";
 
 describe("Steam OpenID helpers", () => {
   const originalEnv = { ...process.env };
@@ -15,23 +19,28 @@ describe("Steam OpenID helpers", () => {
   it("builds a valid OpenID URL with correct params", () => {
     const url = buildSteamOpenIdUrl(
       "https://example.com/auth/steam/callback",
-      "https://example.com"
+      "https://example.com",
     );
     const parsed = new URL(url);
-    expect(parsed.origin + parsed.pathname).toBe("https://steamcommunity.com/openid/login");
+    expect(parsed.origin + parsed.pathname).toBe(
+      "https://steamcommunity.com/openid/login",
+    );
     expect(parsed.searchParams.get("openid.mode")).toBe("checkid_setup");
     expect(parsed.searchParams.get("openid.return_to")).toBe(
-      "https://example.com/auth/steam/callback"
+      "https://example.com/auth/steam/callback",
     );
     expect(parsed.searchParams.get("openid.realm")).toBe("https://example.com");
   });
 
   it("verifies a valid Steam OpenID response and extracts steamId", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response("is_valid:true\n"));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response("is_valid:true\n"));
     vi.stubGlobal("fetch", fetchMock);
 
     const params = new URLSearchParams({
-      "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000000",
+      "openid.claimed_id":
+        "https://steamcommunity.com/openid/id/76561198000000000",
     });
 
     const result = await verifySteamOpenId(params);
@@ -46,18 +55,26 @@ describe("Steam OpenID helpers", () => {
   });
 
   it("returns invalid when Steam says is_valid:false", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("is_valid:false\n")));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("is_valid:false\n")),
+    );
     const params = new URLSearchParams({
-      "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000000",
+      "openid.claimed_id":
+        "https://steamcommunity.com/openid/id/76561198000000000",
     });
     const result = await verifySteamOpenId(params);
     expect(result.valid).toBe(false);
   });
 
   it("returns invalid when fetch throws", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network error")));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("network error")),
+    );
     const params = new URLSearchParams({
-      "openid.claimed_id": "https://steamcommunity.com/openid/id/76561198000000000",
+      "openid.claimed_id":
+        "https://steamcommunity.com/openid/id/76561198000000000",
     });
     const result = await verifySteamOpenId(params);
     expect(result.valid).toBe(false);

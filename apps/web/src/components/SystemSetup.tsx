@@ -21,10 +21,15 @@ export default function SystemSetup() {
 
     setLoading(true);
     try {
-      await client.configureSystem({ apiKey: apiKey.trim(), realm: realm.trim() || undefined });
+      await client.configureSystem({
+        apiKey: apiKey.trim(),
+        realm: realm.trim() || undefined,
+      });
       await refreshSystemStatus();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to configure system.");
+      setError(
+        err instanceof Error ? err.message : "Failed to configure system.",
+      );
     } finally {
       setLoading(false);
     }
@@ -54,13 +59,18 @@ export default function SystemSetup() {
           </h1>
 
           <p className="mt-4 text-sm leading-relaxed text-muted">
-            To use Steam Auction, you need to provide your own Steam Web API key. This key is stored locally on your device and is never sent to any central server.
+            To use Steam Auction, you need to provide your own Steam Web API
+            key. This key is stored locally on your device and is never sent to
+            any central server.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <div>
-            <label htmlFor="apiKey" className="mb-2 block text-sm font-medium text-white">
+            <label
+              htmlFor="apiKey"
+              className="mb-2 block text-sm font-medium text-white"
+            >
               Steam Web API Key <span className="text-rose-400">*</span>
             </label>
             <input
@@ -81,12 +91,16 @@ export default function SystemSetup() {
                 className="text-amber-400 hover:underline"
               >
                 Steam Developer Portal
-              </a>.
+              </a>
+              .
             </p>
           </div>
 
           <div>
-            <label htmlFor="realm" className="mb-2 block text-sm font-medium text-white">
+            <label
+              htmlFor="realm"
+              className="mb-2 block text-sm font-medium text-white"
+            >
               Domain Name (Optional)
             </label>
             <input
@@ -98,7 +112,8 @@ export default function SystemSetup() {
               placeholder="http://localhost:3000"
             />
             <p className="mt-2 text-xs text-muted">
-              Only needed if you are hosting this on a public domain for Steam login callbacks.
+              Only needed if you are hosting this on a public domain for Steam
+              login callbacks.
             </p>
           </div>
 
